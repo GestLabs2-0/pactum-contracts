@@ -1,12 +1,12 @@
 [package]
-name = "stayke-core"
+name = "pactum-core"
 version = "0.1.0"
-description = "Core library for Stayke, containing users core logic to be used by other programs by CPI."
+description = "Core registry and identity program for Pactum, managing users, marketplaces, role profiles, offers, and B2B arbiters."
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "stayke_core"
+name = "pactum_core"
 
 [features]
 default = []
@@ -19,9 +19,8 @@ anchor-debug = []
 custom-heap = []
 custom-panic = []
 
-
 [dependencies]
-anchor-lang = {version = "1.0.2", features = ['init-if-needed']}
+anchor-lang = { version = "1.0.2", features = ["init-if-needed"] }
 stayke-config = { path = "../stayke-config", features = ["cpi"] }
 
 [dev-dependencies]

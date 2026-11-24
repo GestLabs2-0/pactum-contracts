@@ -7,7 +7,7 @@ skip-lint = false
 
 [programs.devnet]
 stayke_config = "9ESE5Ztpr8zWbLyXCyiB5QqcjxHghotT8zqJxD2S3zaT"
-stayke_core = "2u1JrVasLvuGR5s3n84p5yaitHU2PGa8VjWZ7P2Eescm"
+pactum_core = "2u1JrVasLvuGR5s3n84p5yaitHU2PGa8VjWZ7P2Eescm"
 stayke_treasury = "HV16vUTaZ78bJP1CyH5KDWyx8NqS1MYSGdPkRsMcnSuY"
 stayke_escrow = "68ipZiXiUhsaSYSqEM3619vXgKy5CqFmNE6rYzxrXu6a"
 stayke_disputes = "8vgDvWkdqhpGBPAczpmZ3DJahVgNN36soRnyw6MbfMCJ"

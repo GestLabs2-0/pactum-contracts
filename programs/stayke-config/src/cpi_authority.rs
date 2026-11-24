@@ -77,6 +77,7 @@ mod tests {
             is_initialized: true,
             platform_vault: Pubkey::new_unique(),
             platform_vault_bump: 0,
+            sas_program: Pubkey::new_unique(),
             core_program: Pubkey::new_unique(),
             escrow_program: escrow,
             disputes_program: disputes,
