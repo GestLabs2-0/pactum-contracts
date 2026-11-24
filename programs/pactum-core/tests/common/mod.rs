@@ -1,0 +1,238 @@
+#![allow(dead_code)]
+
+use {
+    anchor_lang::{
+        prelude::{system_program, AccountSerialize, Pubkey},
+        solana_program::instruction::Instruction,
+        InstructionData, ToAccountMetas,
+    },
+    litesvm::LiteSVM,
+    pactum_core::{
+        constants::*,
+        instructions::CreateOfferParams,
+        state::{DisputeMode, PricingType},
+        CreateMarketplaceParams,
+    },
+    solana_account::Account,
+    solana_keypair::Keypair,
+    solana_message::{Message, VersionedMessage},
+    solana_signer::Signer,
+    solana_transaction::versioned::VersionedTransaction,
+    stayke_config::{GlobalConfig, GLOBAL_CONFIG_SEED},
+};
+
+pub fn serialize_account<T: AccountSerialize>(data: &T) -> Vec<u8> {
+    let mut out = Vec::new();
+    data.try_serialize(&mut out).unwrap();
+    out
+}
+
+pub fn setup_svm(sas_program: Pubkey, global_authority: Pubkey) -> (LiteSVM, Pubkey) {
+    let core_id = pactum_core::id();
+    let config_id = stayke_config::id();
+    let mut svm = LiteSVM::new();
+    let bytes = include_bytes!("../../../../target/deploy/pactum_core.so");
+    assert!(
+        bytes.len() > 10_000,
+        "pactum_core.so looks stub-sized ({})",
+        bytes.len()
+    );
+    svm.add_program(core_id, bytes).unwrap();
+
+    let (global_config_pda, gc_bump) =
+        Pubkey::find_program_address(&[GLOBAL_CONFIG_SEED.as_bytes()], &config_id);
+    let gc = GlobalConfig {
+        authority: global_authority,
+        minimum_deposit: 0,
+        fee_bps: 50,
+        usdc_mint: Pubkey::new_unique(),
+        is_initialized: true,
+        free_ops: 0,
+        platform_vault: Pubkey::new_unique(),
+        platform_vault_bump: 255,
+        sas_program,
+        core_program: stayke_config::CORE_PROGRAM_ID,
+        escrow_program: stayke_config::ESCROW_PROGRAM_ID,
+        disputes_program: stayke_config::DISPUTES_PROGRAM_ID,
+        treasury_program: stayke_config::TREASURY_PROGRAM_ID,
+        bump: gc_bump,
+    };
+    svm.set_account(
+        global_config_pda,
+        Account {
+            lamports: 1_000_000_000,
+            data: serialize_account(&gc),
+            owner: config_id,
+            executable: false,
+            rent_epoch: 0,
+        },
+    )
+    .unwrap();
+
+    (svm, global_config_pda)
+}
+
+pub fn send_ix(
+    svm: &mut LiteSVM,
+    ix: Instruction,
+    payer: &Keypair,
+    signers: &[&Keypair],
+) -> Result<(), String> {
+    let mut unique_signers: Vec<&Keypair> = Vec::with_capacity(signers.len());
+    for signer in signers {
+        if !unique_signers.iter().any(|s| s.pubkey() == signer.pubkey()) {
+            unique_signers.push(signer);
+        }
+    }
+    let blockhash = svm.latest_blockhash();
+    let msg = Message::new_with_blockhash(&[ix], Some(&payer.pubkey()), &blockhash);
+    let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &unique_signers).unwrap();
+    svm.send_transaction(tx)
+        .map(|_| ())
+        .map_err(|e| format!("{e:?}"))
+}
+
+pub fn create_user_main(svm: &mut LiteSVM, user: &Keypair, payer: &Keypair) -> Pubkey {
+    let core_id = pactum_core::id();
+    let (user_main_pda, _) = Pubkey::find_program_address(
+        &[USER_MAIN_SEED.as_bytes(), user.pubkey().as_ref()],
+        &core_id,
+    );
+    let ix = Instruction::new_with_bytes(
+        core_id,
+        &pactum_core::instruction::InitUserMain {}.data(),
+        pactum_core::accounts::InitUserMain {
+            user_main: user_main_pda,
+            authority: user.pubkey(),
+            payer: payer.pubkey(),
+            system_program: system_program::id(),
+        }
+        .to_account_metas(None),
+    );
+    send_ix(svm, ix, payer, &[payer, user]).unwrap();
+    user_main_pda
+}
+
+pub fn create_marketplace_account(
+    svm: &mut LiteSVM,
+    market_id: u64,
+    committee: Pubkey,
+    dispute_mode: DisputeMode,
+    requires_identity: bool,
+    payer: &Keypair,
+) -> Pubkey {
+    let core_id = pactum_core::id();
+    let (market_pda, _) = Pubkey::find_program_address(
+        &[
+            MARKETPLACE_SEED.as_bytes(),
+            market_id.to_le_bytes().as_ref(),
+        ],
+        &core_id,
+    );
+    let ix = Instruction::new_with_bytes(
+        core_id,
+        &pactum_core::instruction::CreateMarketplace {
+            market_id,
+            params: CreateMarketplaceParams {
+                committee,
+                dispute_mode,
+                requires_identity,
+                min_judge_stake: 100,
+                max_judge_stake: 1000,
+                min_arbiter_stake: 500,
+                min_jury_fee: 2_000_000,
+            },
+        }
+        .data(),
+        pactum_core::accounts::CreateMarketplace {
+            marketplace: market_pda,
+            payer: payer.pubkey(),
+            system_program: system_program::id(),
+        }
+        .to_account_metas(None),
+    );
+    send_ix(svm, ix, payer, &[payer]).unwrap();
+    market_pda
+}
+
+pub fn create_provider_account(
+    svm: &mut LiteSVM,
+    market_pda: Pubkey,
+    user_main_pda: Pubkey,
+    authority: &Keypair,
+    payer: &Keypair,
+) -> Pubkey {
+    let core_id = pactum_core::id();
+    let (provider_pda, _) = Pubkey::find_program_address(
+        &[
+            PROVIDER_SEED.as_bytes(),
+            market_pda.as_ref(),
+            user_main_pda.as_ref(),
+        ],
+        &core_id,
+    );
+    let ix = Instruction::new_with_bytes(
+        core_id,
+        &pactum_core::instruction::InitProvider {}.data(),
+        pactum_core::accounts::InitProvider {
+            provider: provider_pda,
+            marketplace: market_pda,
+            user_main: user_main_pda,
+            authority: authority.pubkey(),
+            payer: payer.pubkey(),
+            system_program: system_program::id(),
+        }
+        .to_account_metas(None),
+    );
+    send_ix(svm, ix, payer, &[payer, authority]).unwrap();
+    provider_pda
+}
+
+pub fn create_offer_account(
+    svm: &mut LiteSVM,
+    provider_pda: Pubkey,
+    user_main_pda: Pubkey,
+    market_pda: Pubkey,
+    offer_id: u32,
+    authority: &Keypair,
+    payer: &Keypair,
+) -> Pubkey {
+    let core_id = pactum_core::id();
+    let (offer_pda, _) = Pubkey::find_program_address(
+        &[
+            OFFER_SEED.as_bytes(),
+            provider_pda.as_ref(),
+            offer_id.to_le_bytes().as_ref(),
+        ],
+        &core_id,
+    );
+    let ix = Instruction::new_with_bytes(
+        core_id,
+        &pactum_core::instruction::CreateOffer {
+            params: CreateOfferParams {
+                base_price: Some(50_000_000),
+                pricing_type: PricingType::Fixed,
+                approval_window_secs: 86_400,
+                provider_bond: 0,
+                required_client_bond: 0,
+                jury_fee: 2_500_000,
+                default_arbiter: None,
+                content_ref: [1u8; 32],
+                state_hash: [2u8; 32],
+            },
+        }
+        .data(),
+        pactum_core::accounts::CreateOffer {
+            offer: offer_pda,
+            provider: provider_pda,
+            user_main: user_main_pda,
+            marketplace: market_pda,
+            authority: authority.pubkey(),
+            payer: payer.pubkey(),
+            system_program: system_program::id(),
+        }
+        .to_account_metas(None),
+    );
+    send_ix(svm, ix, payer, &[payer, authority]).unwrap();
+    offer_pda
+}
