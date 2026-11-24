@@ -46,6 +46,10 @@ pub authority: Signer<'info>,
 - Account discriminators must be verified on deserialization for any cross-program account read.
 - No magic numbers — use named constants for seeds, fees, timeouts, and limits.
 - If a task works in tests, always handle each instruction in a different file while working on unit tests
+- Tests must focus on a single specific functionality rather than spanning multiple behaviors; keep tests atomic to simplify future debugging.
+- Keep one instruction per file under `instructions/`; for CPI-only instructions, place them inside an `instructions/cpi/` subfolder with one instruction per file.
+- Handle each instruction in its own separate commit.
+- Document the exact PDA seeds directly above every `#[account]` struct in `state/` to prevent seed divergence across instructions and tests.
 ---
 
 ## Skills
