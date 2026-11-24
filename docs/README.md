@@ -45,6 +45,7 @@ Si SoT y as-implemented chocan: **manda la SoT** para producto; estas guías sol
 
 | Guía                                                                     | Contenido                                            |
 | ------------------------------------------------------------------------ | ---------------------------------------------------- |
+| [pactum-core.guide.md](./pactum-core.guide.md)                           | Pactum Core: identidad SAS, mercados, roles, ofertas y árbitros B2B |
 | [stayke-architecture-flow.guide.md](./stayke-architecture-flow.guide.md) | Vista corta: roles + CPI (sin dump de System Design) |
 | [stayke-global.guide.md](./stayke-global.guide.md)                       | Referencia técnica: IDs, cuentas, mapa CPI           |
 | [stayke-flow-diagram.md](./stayke-flow-diagram.md)                       | Diagramas Mermaid alineados al código                |
