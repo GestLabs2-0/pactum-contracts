@@ -14,6 +14,7 @@ mod revoke_arbiter;
 mod set_global_ban;
 mod set_local_ban;
 mod unlink_sas_identity;
+mod update_marketplace;
 mod update_offer;
 
 pub use apply_as_arbiter::*;
@@ -32,4 +33,5 @@ pub use revoke_arbiter::*;
 pub use set_global_ban::*;
 pub use set_local_ban::*;
 pub use unlink_sas_identity::*;
+pub use update_marketplace::*;
 pub use update_offer::*;

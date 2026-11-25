@@ -10,6 +10,12 @@ pub struct MarketplaceCreated {
 }
 
 #[event]
+pub struct MarketplaceUpdated {
+    pub marketplace: Pubkey,
+    pub committee: Pubkey,
+}
+
+#[event]
 pub struct GlobalBanUpdated {
     pub user_main: Pubkey,
     pub authority: Pubkey,

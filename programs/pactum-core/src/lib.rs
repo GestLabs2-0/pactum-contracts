@@ -46,6 +46,13 @@ pub mod pactum_core {
         handler_create_marketplace(ctx, market_id, params)
     }
 
+    pub fn update_marketplace(
+        ctx: Context<UpdateMarketplace>,
+        params: UpdateMarketplaceParams,
+    ) -> Result<()> {
+        handler_update_marketplace(ctx, params)
+    }
+
     pub fn init_client(ctx: Context<InitClient>) -> Result<()> {
         handler_init_client(ctx)
     }
