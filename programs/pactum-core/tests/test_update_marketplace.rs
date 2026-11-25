@@ -21,9 +21,7 @@ fn default_update_params() -> UpdateMarketplaceParams {
         min_arbiter_stake: None,
         min_jury_fee: None,
         kyb_credential: None,
-        requires_identity: None,
         is_active: None,
-        new_committee: None,
     }
 }
 

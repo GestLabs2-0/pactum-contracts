@@ -7,6 +7,7 @@ use {
         AnchorSerialize, InstructionData, ToAccountMetas,
     },
     litesvm::LiteSVM,
+    pactum_config::{GlobalConfig, GLOBAL_CONFIG_SEED},
     pactum_core::{
         constants::*,
         instructions::CreateOfferParams,
@@ -19,7 +20,6 @@ use {
     solana_message::{Message, VersionedMessage},
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
-    stayke_config::{GlobalConfig, GLOBAL_CONFIG_SEED},
 };
 
 pub fn serialize_account<T: AccountSerialize>(data: &T) -> Vec<u8> {
@@ -30,7 +30,7 @@ pub fn serialize_account<T: AccountSerialize>(data: &T) -> Vec<u8> {
 
 pub fn setup_svm(sas_program: Pubkey, global_authority: Pubkey) -> (LiteSVM, Pubkey, GlobalConfig) {
     let core_id = pactum_core::id();
-    let config_id = stayke_config::id();
+    let config_id = pactum_config::id();
     let mut svm = LiteSVM::new();
     let bytes = include_bytes!("../../../../target/deploy/pactum_core.so");
     assert!(
@@ -44,19 +44,19 @@ pub fn setup_svm(sas_program: Pubkey, global_authority: Pubkey) -> (LiteSVM, Pub
         Pubkey::find_program_address(&[GLOBAL_CONFIG_SEED.as_bytes()], &config_id);
     let gc = GlobalConfig {
         authority: global_authority,
-        minimum_deposit: 0,
-        fee_bps: 50,
         usdc_mint: Pubkey::new_unique(),
-        is_initialized: true,
-        free_ops: 0,
         platform_vault: Pubkey::new_unique(),
         platform_vault_bump: 255,
+        protocol_fee_bps: 50,
+        max_protocol_fee: 0,
+        dispute_escalation_fee: 250_000,
         sas_program,
-        core_program: stayke_config::CORE_PROGRAM_ID,
-        escrow_program: stayke_config::ESCROW_PROGRAM_ID,
-        disputes_program: stayke_config::DISPUTES_PROGRAM_ID,
-        treasury_program: stayke_config::TREASURY_PROGRAM_ID,
         sas_credential: Pubkey::new_unique(),
+        core_program: pactum_config::CORE_PROGRAM_ID,
+        escrow_program: pactum_config::ESCROW_PROGRAM_ID,
+        disputes_program: pactum_config::DISPUTES_PROGRAM_ID,
+        treasury_program: pactum_config::TREASURY_PROGRAM_ID,
+        is_initialized: true,
         bump: gc_bump,
     };
 
