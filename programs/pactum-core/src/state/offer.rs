@@ -11,8 +11,6 @@ pub enum PricingType {
 #[account]
 #[derive(InitSpace)]
 pub struct Offer {
-    pub provider: Pubkey,
-    pub marketplace: Pubkey,
     pub offer_id: u32,
     pub base_price: Option<u64>,
     pub pricing_type: PricingType,

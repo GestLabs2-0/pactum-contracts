@@ -4,14 +4,15 @@ use {
     anchor_lang::{
         prelude::{system_program, AccountSerialize, Pubkey},
         solana_program::instruction::Instruction,
-        InstructionData, ToAccountMetas,
+        AnchorSerialize, InstructionData, ToAccountMetas,
     },
     litesvm::LiteSVM,
     pactum_core::{
         constants::*,
         instructions::CreateOfferParams,
-        state::{DisputeMode, PricingType},
-        CreateMarketplaceParams,
+        state::{DisputeMode, PricingType, StorageBackend},
+        Attestation, CreateMarketplaceParams, Credential, ATTESTATION_DISCRIMINATOR,
+        CREDENTIAL_DISCRIMINATOR,
     },
     solana_account::Account,
     solana_keypair::Keypair,
@@ -27,7 +28,7 @@ pub fn serialize_account<T: AccountSerialize>(data: &T) -> Vec<u8> {
     out
 }
 
-pub fn setup_svm(sas_program: Pubkey, global_authority: Pubkey) -> (LiteSVM, Pubkey) {
+pub fn setup_svm(sas_program: Pubkey, global_authority: Pubkey) -> (LiteSVM, Pubkey, GlobalConfig) {
     let core_id = pactum_core::id();
     let config_id = stayke_config::id();
     let mut svm = LiteSVM::new();
@@ -55,8 +56,10 @@ pub fn setup_svm(sas_program: Pubkey, global_authority: Pubkey) -> (LiteSVM, Pub
         escrow_program: stayke_config::ESCROW_PROGRAM_ID,
         disputes_program: stayke_config::DISPUTES_PROGRAM_ID,
         treasury_program: stayke_config::TREASURY_PROGRAM_ID,
+        sas_credential: Pubkey::new_unique(),
         bump: gc_bump,
     };
+
     svm.set_account(
         global_config_pda,
         Account {
@@ -69,7 +72,58 @@ pub fn setup_svm(sas_program: Pubkey, global_authority: Pubkey) -> (LiteSVM, Pub
     )
     .unwrap();
 
-    (svm, global_config_pda)
+    (svm, global_config_pda, gc)
+}
+
+pub fn seed_sas_credential_and_attestation(
+    svm: &mut LiteSVM,
+    sas_program: Pubkey,
+    sas_credential: Pubkey,
+    authorized_signer: Pubkey,
+    nonce: Pubkey,
+    id_hash: [u8; 32],
+    expiry: i64,
+) -> Pubkey {
+    let cred = Credential {
+        authority: Pubkey::new_unique(),
+        name: b"PactumKYC".to_vec(),
+        authorized_signers: vec![authorized_signer],
+    };
+    svm.set_account(
+        sas_credential,
+        Account {
+            lamports: 1_000_000,
+            data: serialize_sas_acc(CREDENTIAL_DISCRIMINATOR, &cred),
+            owner: sas_program,
+            executable: false,
+            rent_epoch: 0,
+        },
+    )
+    .unwrap();
+
+    let sas_attestation = Pubkey::new_unique();
+    let att = Attestation {
+        nonce,
+        credential: sas_credential,
+        schema: Pubkey::new_unique(),
+        data: id_hash.to_vec(),
+        signer: authorized_signer,
+        expiry,
+        token_account: Pubkey::default(),
+    };
+    svm.set_account(
+        sas_attestation,
+        Account {
+            lamports: 1_000_000,
+            data: serialize_sas_acc(ATTESTATION_DISCRIMINATOR, &att),
+            owner: sas_program,
+            executable: false,
+            rent_epoch: 0,
+        },
+    )
+    .unwrap();
+
+    sas_attestation
 }
 
 pub fn send_ix(
@@ -136,6 +190,8 @@ pub fn create_marketplace_account(
             params: CreateMarketplaceParams {
                 committee,
                 dispute_mode,
+                storage_backend: StorageBackend::Arweave,
+                kyb_credential: None,
                 requires_identity,
                 min_judge_stake: 100,
                 max_judge_stake: 1000,
@@ -235,4 +291,10 @@ pub fn create_offer_account(
     );
     send_ix(svm, ix, payer, &[payer, authority]).unwrap();
     offer_pda
+}
+
+pub fn serialize_sas_acc<T: AnchorSerialize>(discriminator: u8, val: &T) -> Vec<u8> {
+    let mut out = vec![discriminator];
+    val.serialize(&mut out).unwrap();
+    out
 }

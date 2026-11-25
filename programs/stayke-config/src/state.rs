@@ -33,6 +33,8 @@ pub struct GlobalConfig {
     /// Stayke treasury program ID (CPI allowlist SoT).
     pub treasury_program: Pubkey,
 
+    pub sas_credential: Pubkey,
+
     pub bump: u8,
 }
 

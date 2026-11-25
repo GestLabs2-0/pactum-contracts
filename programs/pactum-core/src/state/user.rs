@@ -10,11 +10,12 @@ pub struct UserMainAcc {
     pub bump: u8,
 }
 
-/// Optional local identity record (fallback/compatibility alongside SAS attestations).
-/// Seeds: `[IDENTITY_SEED.as_bytes(), id_hash]` (`["identity", id_hash]`).
+/// Unique identity anchor preventing the same KYC/KYB hash from being linked to multiple wallets.
+/// Seeds: `[IDENTITY_SEED.as_bytes(), id_hash.as_ref()]` (`["identity", id_hash]`).
 #[account]
 #[derive(InitSpace)]
 pub struct Identity {
+    pub authority: Pubkey,
     pub verified_at: i64,
     pub linked: bool,
     pub bump: u8,

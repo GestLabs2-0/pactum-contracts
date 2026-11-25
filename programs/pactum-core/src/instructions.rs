@@ -13,6 +13,7 @@ mod review_arbiter_application;
 mod revoke_arbiter;
 mod set_global_ban;
 mod set_local_ban;
+mod unlink_sas_identity;
 mod update_offer;
 
 pub use apply_as_arbiter::*;
@@ -30,4 +31,5 @@ pub use review_arbiter_application::*;
 pub use revoke_arbiter::*;
 pub use set_global_ban::*;
 pub use set_local_ban::*;
+pub use unlink_sas_identity::*;
 pub use update_offer::*;

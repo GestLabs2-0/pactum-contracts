@@ -17,6 +17,19 @@ pub enum PactumCoreError {
     #[msg("Provided attestation is not owned by the configured SAS program")]
     InvalidSasProgram,
 
+    #[msg("Provided credential is not owned by the configured SAS program")]
+    InvalidCredential,
+    #[msg("Attestation does not belong to authority")]
+    InvalidAttestationAddress,
+
+    #[msg("Provided credential is not owned by Pactum")]
+    WrongPactumCredential,
+    #[msg("Provided attestation is not owned by Pactum")]
+    WrongPactumAttestation,
+
+    #[msg("Empty account data")]
+    EmptyAccData,
+
     #[msg("Marketplace is not active")]
     MarketplaceInactive,
 
@@ -52,4 +65,28 @@ pub enum PactumCoreError {
 
     #[msg("Invalid rent payer account")]
     InvalidRentPayer,
+
+    #[msg("Invalid attestation account")]
+    InvalidAttestationAcc,
+
+    #[msg("Invalid credential account")]
+    InvalidCredentialAcc,
+
+    #[msg("Attestation used an invalid signer")]
+    InvalidAttestationSigner,
+
+    #[msg("Attestation expired")]
+    AttestationExpired,
+
+    #[msg("User does not have a linked SAS attestation")]
+    NoLinkedAttestation,
+
+    #[msg("Linked attestation is still active and has not expired or been closed")]
+    AttestationStillActive,
+
+    #[msg("Attestation data is empty or does not match the identity hash")]
+    InvalidAttestationData,
+
+    #[msg("This identity hash is already linked to another wallet")]
+    IdentityAlreadyClaimed,
 }
