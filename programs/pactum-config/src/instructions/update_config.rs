@@ -14,11 +14,6 @@ pub struct UpdateConfigParams {
     pub dispute_escalation_fee: Option<u64>,
     pub sas_program: Option<Pubkey>,
     pub sas_credential: Option<Pubkey>,
-    pub core_program: Option<Pubkey>,
-    pub escrow_program: Option<Pubkey>,
-    pub disputes_program: Option<Pubkey>,
-    pub treasury_program: Option<Pubkey>,
-    pub new_authority: Option<Pubkey>,
 }
 
 #[derive(Accounts)]
@@ -56,25 +51,6 @@ pub fn handler_update_config(ctx: Context<UpdateConfig>, params: UpdateConfigPar
     }
     if let Some(sas_credential) = params.sas_credential {
         global_config.sas_credential = sas_credential;
-    }
-    if let Some(core_program) = params.core_program {
-        global_config.core_program = core_program;
-    }
-    if let Some(escrow_program) = params.escrow_program {
-        global_config.escrow_program = escrow_program;
-    }
-    if let Some(disputes_program) = params.disputes_program {
-        global_config.disputes_program = disputes_program;
-    }
-    if let Some(treasury_program) = params.treasury_program {
-        global_config.treasury_program = treasury_program;
-    }
-    if let Some(new_authority) = params.new_authority {
-        require!(
-            new_authority != Pubkey::default(),
-            PactumConfigError::InvalidAuthority
-        );
-        global_config.authority = new_authority;
     }
 
     emit!(ConfigUpdated {
