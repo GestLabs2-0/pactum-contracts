@@ -58,4 +58,5 @@ flowchart TD
 
 ## Próximo paso
 
-Refactorizar `stayke-escrow` → `pactum-escrow` para `Agreement` (`1..N` hitos), `EscrowVault` aislado y liberación optimista.
+- **Código (Stage 1):** refactorizar `stayke-escrow` → `pactum-escrow` para `Agreement` (`1..N` hitos), `EscrowVault` aislado y liberación optimista.
+- **Tokenomics (Stage 2 — diferido):** el *staking* actual permanece en USDC. La eventual introducción de un SPL token propio (distribución por fases / incentivos a jurados tipo Kleros) queda anotada para evaluación económica posterior al cierre del código base.
