@@ -18,19 +18,13 @@ fn empty_update_params() -> UpdateConfigParams {
         dispute_escalation_fee: None,
         sas_program: None,
         sas_credential: None,
-        core_program: None,
-        escrow_program: None,
-        disputes_program: None,
-        treasury_program: None,
-        new_authority: None,
     }
 }
 
 #[test]
-fn update_config_updates_fees_and_rotates_authority() {
+fn update_config_updates_fees_and_dispute_escalation_fee() {
     let mut svm = common::setup_svm();
     let authority = Keypair::new();
-    let new_authority = Keypair::new();
     svm.airdrop(&authority.pubkey(), 10_000_000_000).unwrap();
 
     let usdc_mint = common::create_mint(&mut svm, &authority.pubkey(), 6);
@@ -46,7 +40,6 @@ fn update_config_updates_fees_and_rotates_authority() {
     params.protocol_fee_bps = Some(75);
     params.max_protocol_fee = Some(10_000_000);
     params.dispute_escalation_fee = Some(500_000);
-    params.new_authority = Some(new_authority.pubkey());
 
     let ix = Instruction::new_with_bytes(
         pactum_config::id(),
@@ -64,7 +57,7 @@ fn update_config_updates_fees_and_rotates_authority() {
     assert_eq!(cfg.protocol_fee_bps, 75);
     assert_eq!(cfg.max_protocol_fee, 10_000_000);
     assert_eq!(cfg.dispute_escalation_fee, 500_000);
-    assert_eq!(cfg.authority, new_authority.pubkey());
+    assert_eq!(cfg.authority, authority.pubkey());
 }
 
 #[test]
