@@ -1,6 +1,6 @@
 # Guía `pactum-core` (as implemented)
 
-> **As implemented** — documenta el programa `programs/pactum-core` en `pactum-contracts` (`2u1JrVasLvuGR5s3n84p5yaitHU2PGa8VjWZ7P2Eescm`).
+> **As implemented** — documenta el programa `programs/pactum-core` en `pactum-contracts` (`9g8fxn9YCSq4C4czHpCwn5PNpYmwEXCDN9h8qBehpQrW`).
 > **SoT técnica:** [pactum-programs-spec.md](../../docs/architecture/pactum-programs-spec.md).
 
 `pactum-core` centraliza la identidad raíz (`UserMainAcc`), la creación *permissionless* de `Marketplace`s sin dueño, los perfiles aislados por rol (`Client`, `Provider`, `Judge`), el catálogo reutilizable de `Offer`s y el registro B2B de árbitros (`ArbiterApplication` / `ArbiterProfile`). Toda mutación cruzada de métricas, *stakes* o disputas exige firma PDA `cpi_authority` validada contra `GlobalConfig` mediante `assert_cpi_authority`.
@@ -12,7 +12,42 @@
 3. **Mercado (permissionless):** `create_marketplace(market_id, params)` → define `committee`, `dispute_mode` (`ArbiterOnly` | `DecentralizedJury` | `Hybrid`), `requires_identity` y mínimos de *stake*/*fee*.
 4. **Participantes:** `init_client`, `init_provider` o `init_judge` (este último bloqueado si `dispute_mode == ArbiterOnly`).
 5. **Ofertas:** `create_offer(params)`, `update_offer(params)` y `close_offer` (devuelve renta exclusivamente a `offer.rent_payer`).
-6. **Árbitros B2B:** `apply_as_arbiter(arbiter_fee, sla_secs)` → `review_arbiter_application(approve)` (comité crea `ArbiterProfile` solo si aprueba y cierra `ArbiterApplication` → `rent_payer`) → `revoke_arbiter`.
+6. **Árbitros B2B:** `apply_as_arbiter(arbiter_fee, sla_secs, id_hash)` → `review_arbiter_application(approve)` (comité crea `ArbiterProfile` solo si aprueba y cierra `ArbiterApplication` → `rent_payer`) → `revoke_arbiter`.
+
+### Diagrama de flujo
+
+```mermaid
+flowchart TD
+    Admin["Admin global"] -->|initialize_core_config| CoreCfg["CoreConfig"]
+    Admin -->|set_global_ban| UserMain["UserMainAcc"]
+
+    User["Usuario"] -->|init_user_main| UserMain
+    User -->|link_sas_identity| SasCheck["verify_sas_attestation + sha256"]
+    SasCheck -->|crea ancla unica| Identity["Identity (id_hash)"]
+    SasCheck -->|asocia| UserMain
+    User -->|unlink_sas_identity si cerro o expiro| UserMain
+
+    Creator["Cualquier payer"] -->|create_marketplace| Market["Marketplace (committee, dispute_mode, kyb_credential)"]
+    Committee["Comite del Marketplace"] -->|set_local_ban| Roles
+
+    UserMain --> Gate{"Marketplace activo, sin baneo y SAS si requires_identity"}
+    Market --> Gate
+    Gate -->|init_client| Client["Client"]
+    Gate -->|init_provider| Provider["Provider"]
+    Gate -->|init_judge si no es ArbiterOnly| Judge["Judge"]
+
+    Provider -->|create_offer| Offer["Offer (rent_payer)"]
+    Offer -->|update_offer| Offer
+    Offer -->|close_offer devuelve renta| RentPayer["rent_payer"]
+
+    Arbiter["Solicitante B2B"] -->|apply_as_arbiter + KYB| Identity
+    Arbiter -->|apply_as_arbiter| App["ArbiterApplication"]
+    Committee -->|review_arbiter_application approve| ArbProf["ArbiterProfile"]
+    App -->|cierra devolviendo renta| RentPayer
+    Committee -->|revoke_arbiter| ArbProf
+
+    CPI["Programas autorizados (Treasury, Escrow, Disputes)"] -->|assert_cpi_authority| Roles["Client / Provider / Judge / ArbiterProfile"]
+```
 
 ## Detalles
 
@@ -35,43 +70,44 @@
 
 ### Instrucciones públicas (`instructions/`)
 
-| Categoría | Instrucción | Quién firma | Efecto |
-|-----------|-------------|-------------|--------|
-| **Identidad / Admin** | `initialize_core_config` | `global_config.authority` | Crea `CoreConfig` |
-| | `init_user_main` | `authority`, `payer` | Crea `UserMainAcc` |
-| | `link_sas_identity(id_hash)` | `authority`, `payer` | Deserializa `Attestation`/`Credential`, crea `Identity(id_hash)` anti-Sybil y enlaza `sas_attestation` |
-| | `unlink_sas_identity` | `authority` | Limpia `sas_attestation` si fue cerrada o expiró en SAS (mantiene `Identity(id_hash)`) |
-| | `set_global_ban(banned)` | `global_config.authority` | Actualiza `user_main.is_banned` |
-| **Mercados / Roles** | `create_marketplace(market_id, params)` | `payer` *(permissionless)* | Crea `Marketplace` con su `committee` |
-| | `init_client` | `authority`, `payer` | Crea `Client` (valida `!is_banned` y SAS si `requires_identity`) |
-| | `init_provider` | `authority`, `payer` | Crea `Provider` (valida `!is_banned` y SAS si `requires_identity`) |
-| | `init_judge` | `authority`, `payer` | Crea `Judge` (exige `dispute_mode != ArbiterOnly`) |
-| | `set_local_ban(role, banned)` | `marketplace.committee` | Banea/desbanea `Client`, `Provider` o `Judge` en ese mercado |
-| **Ofertas** | `create_offer(params)` | `authority`, `payer` | Crea `Offer` reutilizable, incrementa `provider.offer_count` y fija `rent_payer` |
-| | `update_offer(params)` | `authority` | Actualiza precio, *bonds*, `default_arbiter`, hashes o `is_active` |
-| | `close_offer` | `authority` | Cierra `Offer` devolviendo *lamports* únicamente a `offer.rent_payer` |
-| **Árbitros B2B** | `apply_as_arbiter(arbiter_fee, sla_secs)` | `authority`, `payer` | Valida `sas_kyb_attestation` y crea `ArbiterApplication` con `rent_payer` |
-| | `review_arbiter_application(approve)` | `marketplace.committee` | Si aprueba crea `ArbiterProfile`; cierra `ArbiterApplication` → `rent_payer` |
-| | `revoke_arbiter` | `marketplace.committee` | Marca `arbiter_profile.is_active = false` |
+| Categoría | Instrucción | Quién firma | Para qué sirve |
+|-----------|-------------|-------------|----------------|
+| **Identidad / Admin** | `initialize_core_config` | `global_config.authority` | Enlaza `pactum-core` con `GlobalConfig` al desplegar el protocolo |
+| | `init_user_main` | `authority`, `payer` | Crea la cuenta raíz `UserMainAcc` del usuario (sin identidad aún) |
+| | `link_sas_identity(id_hash)` | `authority`, `payer` | Verifica *attestation* + `Credential` SAS, comprueba `sha256(attestation.data) == id_hash`, crea `Identity(id_hash)` anti-Sybil y la enlaza a `UserMainAcc` |
+| | `unlink_sas_identity` | `authority` | Desvincula `sas_attestation` solo si fue cerrada o expiró en SAS, conservando `Identity(id_hash)` para evitar re-registro en otra wallet |
+| | `set_global_ban(banned)` | `global_config.authority` | Banea o desbanea globalmente a un usuario (`UserMainAcc.is_banned`) en todo el protocolo |
+| **Mercados / Roles** | `create_marketplace(market_id, params)` | `payer` *(permissionless)* | Crea un `Marketplace` sin dueño con su `committee`, `dispute_mode`, `storage_backend`, `kyb_credential` opcional y mínimos de *stake*/*fee* |
+| | `update_marketplace(params)` | `marketplace.committee` | Permite al comité (o gobernanza DAO futura) ajustar límites de *stake* (`min/max_judge_stake`, `min_arbiter_stake`), `min_jury_fee`, `kyb_credential`, `requires_identity`, `is_active` o rotar `committee` |
+| | `init_client` | `authority`, `payer` | Registra el perfil `Client` en un `Marketplace` (exige no estar baneado y SAS si `requires_identity == true`) |
+| | `init_provider` | `authority`, `payer` | Registra el perfil `Provider` en un `Marketplace` para publicar ofertas (exige no estar baneado y SAS si `requires_identity == true`) |
+| | `init_judge` | `authority`, `payer` | Registra el perfil `Judge` para jurados en un `Marketplace` (rechaza mercados `ArbiterOnly`) |
+| | `set_local_ban(role, banned)` | `marketplace.committee` | Veta o rehabilita localmente un `Client`, `Provider` o `Judge` dentro de un `Marketplace` |
+| **Ofertas** | `create_offer(params)` | `authority`, `payer` | Publica una `Offer` reutilizable (fija `offer_id`, incrementa `provider.offer_count` y guarda `rent_payer`) |
+| | `update_offer(params)` | `authority` | Actualiza precio base, *bonds*, `default_arbiter`, `content_ref`, `state_hash` o visibilidad (`is_active`) |
+| | `close_offer` | `authority` | Cierra una `Offer` y devuelve el 100 % de la renta únicamente a `offer.rent_payer` |
+| **Árbitros B2B** | `apply_as_arbiter(arbiter_fee, sla_secs, id_hash)` | `authority`, `payer` | Valida *attestation* KYB contra `marketplace.kyb_credential` (o `global_config.sas_credential`), ancla `Identity(id_hash)` con `init_if_needed` (permite misma wallet en varios mercados) y crea `ArbiterApplication` |
+| | `review_arbiter_application(approve)` | `marketplace.committee` | Aprueba (crea `ArbiterProfile`) o rechaza la solicitud; en ambos casos cierra `ArbiterApplication` devolviendo la renta a `rent_payer` |
+| | `revoke_arbiter` | `marketplace.committee` | Desactiva un `ArbiterProfile` (`is_active = false`) en el mercado |
 
 ### Mutadores CPI privilegiados (`instructions/cpi/`)
 
 Requieren `cpi_authority` (PDA del programa llamador) validada con `assert_cpi_authority`:
 
-| Instrucción | Caller permitido | Efecto |
-|-------------|------------------|--------|
-| `cpi_update_judge_stake(amount, is_stake, pool_id, leaf_index)` | `Treasury` | Actualiza `staked_amount`, `pool_id`, `leaf_index`, `is_active_in_pool` |
-| `cpi_update_arbiter_stake(amount, is_stake)` | `Treasury` | Actualiza `arbiter_profile.staked_amount` |
-| `cpi_record_agreement_outcome(role, outcome)` | `Escrow` | Incrementa `completed_agreements` o `cancelled_agreements` en `Client`/`Provider` |
-| `cpi_update_role_review(role, score)` | `Escrow` | Valida `1..=5` y acumula `total_reviews` / `total_score` en `Client`/`Provider` |
-| `cpi_update_active_disputes(target_role, delta)` | `Disputes` | Ajusta `active_disputes` en `Judge` o `ArbiterProfile` |
-| `cpi_record_dispute_result(winner)` | `Disputes` | Actualiza `disputes_won` y `disputes_lost` en `Client` y `Provider` |
-| `cpi_record_judge_vote(in_consensus)` | `Disputes` | Incrementa `cases_voted` (y `cases_in_consensus` si aplica) |
-| `cpi_record_arbiter_resolution` | `Disputes` | Incrementa `arbiter_profile.cases_resolved` |
+| Instrucción | Caller permitido | Para qué sirve |
+|-------------|------------------|----------------|
+| `cpi_update_judge_stake(amount, is_stake, pool_id, leaf_index)` | `Treasury` | Sincroniza el *stake* y posición (`pool_id`, `leaf_index`) del `Judge` tras depositar o retirar |
+| `cpi_update_arbiter_stake(amount, is_stake)` | `Treasury` | Sincroniza `arbiter_profile.staked_amount` tras depositar, retirar o sufrir *slashing* |
+| `cpi_record_agreement_outcome(role, outcome)` | `Escrow` | Registra si un acuerdo terminó `Completed` o `Cancelled` en `Client` o `Provider` |
+| `cpi_update_role_review(role, score)` | `Escrow` | Acumula una calificación (`1..=5`) en `total_reviews` y `total_score` de `Client` o `Provider` |
+| `cpi_update_active_disputes(target_role, delta)` | `Disputes` | Incrementa o decrementa `active_disputes` de `Judge` o `ArbiterProfile` para bloquear retiros mientras tenga casos abiertos |
+| `cpi_record_dispute_result(winner)` | `Disputes` | Suma `disputes_won` / `disputes_lost` en `Client` y `Provider` al cerrar una disputa |
+| `cpi_record_judge_vote(in_consensus)` | `Disputes` | Incrementa `cases_voted` (y `cases_in_consensus` si votó con la mayoría) en `Judge` |
+| `cpi_record_arbiter_resolution` | `Disputes` | Incrementa `arbiter_profile.cases_resolved` cuando un árbitro B2B resuelve un caso |
 
 ### Verificación
 
-- Tests atomizados por instrucción en `programs/pactum-core/tests/` (LiteSVM): **21/21 pasando** (`1` unit test + `20` tests de integración).
+- Suite atomizada por instrucción en `programs/pactum-core/tests/` (16 archivos en LiteSVM + unit test): todos pasando con **0 warnings**.
 - `cargo fmt -p pactum-core -- --check` y `cargo clippy -p pactum-core --all-targets -- -Dwarnings` con **0 warnings**.
 
 ## Checklist
@@ -79,7 +115,8 @@ Requieren `cpi_authority` (PDA del programa llamador) validada con `assert_cpi_a
 - [x] Una instrucción por archivo en `instructions/` y CPIs aislados en `instructions/cpi/`
 - [x] *Seeds* documentadas sobre cada struct `#[account]` en `state/`
 - [x] Devolución estricta de renta a `rent_payer` en `close_offer` y `review_arbiter_application`
-- [x] Tests atómicos por instrucción en LiteSVM (`21/21` pasando)
+- [x] Unicidad anti-Sybil por `Identity(id_hash)` (`sha256(attestation.data)`) en `link_sas_identity` y `apply_as_arbiter`
+- [x] Tests atómicos por instrucción en LiteSVM pasando con **0 warnings**
 
 ## Próximo paso
 
