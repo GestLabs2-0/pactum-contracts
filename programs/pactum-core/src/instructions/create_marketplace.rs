@@ -4,13 +4,15 @@ use crate::{
     constants::MARKETPLACE_SEED,
     error::PactumCoreError,
     events::MarketplaceCreated,
-    state::{DisputeMode, Marketplace},
+    state::{DisputeMode, Marketplace, StorageBackend},
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub struct CreateMarketplaceParams {
     pub committee: Pubkey,
     pub dispute_mode: DisputeMode,
+    pub storage_backend: StorageBackend,
+    pub kyb_credential: Option<Pubkey>,
     pub requires_identity: bool,
     pub min_judge_stake: u64,
     pub max_judge_stake: u64,
@@ -56,6 +58,8 @@ pub fn handler_create_marketplace(
     marketplace.market_id = market_id;
     marketplace.committee = params.committee;
     marketplace.dispute_mode = params.dispute_mode;
+    marketplace.storage_backend = params.storage_backend;
+    marketplace.kyb_credential = params.kyb_credential;
     marketplace.requires_identity = params.requires_identity;
     marketplace.min_judge_stake = params.min_judge_stake;
     marketplace.max_judge_stake = params.max_judge_stake;

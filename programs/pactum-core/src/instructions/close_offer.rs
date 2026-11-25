@@ -17,7 +17,6 @@ pub struct CloseOffer<'info> {
             offer.offer_id.to_le_bytes().as_ref(),
         ],
         bump = offer.bump,
-        has_one = provider,
         has_one = rent_payer @ PactumCoreError::InvalidRentPayer,
     )]
     pub offer: Account<'info, Offer>,

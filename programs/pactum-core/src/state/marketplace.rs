@@ -7,6 +7,14 @@ pub enum DisputeMode {
     Hybrid,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq, InitSpace)]
+pub enum StorageBackend {
+    Arweave,
+    Irys,
+    Ipfs,
+    Custom,
+}
+
 /// Seeds: `[MARKETPLACE_SEED.as_bytes(), market_id.to_le_bytes().as_ref()]` (`["marketplace", market_id]`).
 #[account]
 #[derive(InitSpace)]
@@ -14,6 +22,8 @@ pub struct Marketplace {
     pub market_id: u64,
     pub committee: Pubkey,
     pub dispute_mode: DisputeMode,
+    pub storage_backend: StorageBackend,
+    pub kyb_credential: Option<Pubkey>,
     pub requires_identity: bool,
     pub min_judge_stake: u64,
     pub max_judge_stake: u64,

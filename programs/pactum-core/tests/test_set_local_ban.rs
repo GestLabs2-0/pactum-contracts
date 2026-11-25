@@ -19,7 +19,7 @@ fn set_local_ban_by_committee_bans_client() {
     let admin = Keypair::new();
     let committee = Keypair::new();
     let user = Keypair::new();
-    let (mut svm, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
+    let (mut svm, _, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
     svm.airdrop(&committee.pubkey(), 10_000_000_000).unwrap();
     svm.airdrop(&user.pubkey(), 10_000_000_000).unwrap();
 

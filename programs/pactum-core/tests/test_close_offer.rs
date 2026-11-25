@@ -14,7 +14,7 @@ fn close_offer_rejects_wrong_rent_payer() {
     let admin = Keypair::new();
     let provider_auth = Keypair::new();
     let relayer = Keypair::new();
-    let (mut svm, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
+    let (mut svm, _, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
     svm.airdrop(&provider_auth.pubkey(), 10_000_000_000)
         .unwrap();
     svm.airdrop(&relayer.pubkey(), 10_000_000_000).unwrap();
@@ -65,7 +65,7 @@ fn close_offer_refunds_lamports_to_original_rent_payer() {
     let admin = Keypair::new();
     let provider_auth = Keypair::new();
     let relayer = Keypair::new();
-    let (mut svm, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
+    let (mut svm, _, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
     svm.airdrop(&provider_auth.pubkey(), 10_000_000_000)
         .unwrap();
     svm.airdrop(&relayer.pubkey(), 10_000_000_000).unwrap();

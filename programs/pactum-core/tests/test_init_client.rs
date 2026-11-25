@@ -1,17 +1,20 @@
 mod common;
 
 use {
+    crate::common::serialize_sas_acc,
     anchor_lang::{
         prelude::{system_program, AccountDeserialize, Pubkey},
         solana_program::instruction::Instruction,
         InstructionData, ToAccountMetas,
     },
     pactum_core::{
-        constants::CLIENT_SEED,
+        constants::{CLIENT_SEED, IDENTITY_SEED},
         state::{Client, DisputeMode},
+        Attestation, Credential, ATTESTATION_DISCRIMINATOR, CREDENTIAL_DISCRIMINATOR,
     },
     solana_account::Account,
     solana_keypair::Keypair,
+    solana_sha256_hasher::hash,
     solana_signer::Signer,
 };
 
@@ -20,7 +23,7 @@ fn init_client_requires_sas_when_marketplace_requires_identity() {
     let admin = Keypair::new();
     let user = Keypair::new();
     let payer = Keypair::new();
-    let (mut svm, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
+    let (mut svm, _, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
     svm.airdrop(&payer.pubkey(), 10_000_000_000).unwrap();
 
     let user_main_pda = common::create_user_main(&mut svm, &user, &payer);
@@ -62,8 +65,27 @@ fn init_client_succeeds_after_linking_sas() {
     let sas_program = Pubkey::new_unique();
     let admin = Keypair::new();
     let user = Keypair::new();
-    let (mut svm, global_config_pda) = common::setup_svm(sas_program, admin.pubkey());
+    let signer = Pubkey::new_unique();
+    let (mut svm, global_config_pda, gc) = common::setup_svm(sas_program, admin.pubkey());
     svm.airdrop(&user.pubkey(), 10_000_000_000).unwrap();
+
+    let credential = Credential {
+        authority: signer,
+        authorized_signers: vec![signer],
+        name: vec![],
+    };
+
+    let raw_id_data = [8u8; 32];
+    let id_hash = hash(&raw_id_data).to_bytes();
+    let attestation = Attestation {
+        credential: gc.sas_credential,
+        data: raw_id_data.to_vec(),
+        expiry: 0,
+        nonce: user.pubkey(),
+        schema: Pubkey::new_unique(),
+        signer,
+        token_account: Pubkey::new_unique(),
+    };
 
     let user_main_pda = common::create_user_main(&mut svm, &user, &user);
     let market_pda = common::create_marketplace_account(
@@ -80,21 +102,40 @@ fn init_client_succeeds_after_linking_sas() {
         sas_attestation,
         Account {
             lamports: 1_000_000,
-            data: vec![1],
+            data: serialize_sas_acc(ATTESTATION_DISCRIMINATOR, &attestation),
             owner: sas_program,
             executable: false,
             rent_epoch: 0,
         },
     )
     .unwrap();
+    svm.set_account(
+        gc.sas_credential,
+        Account {
+            lamports: 1_000_000,
+            data: serialize_sas_acc(CREDENTIAL_DISCRIMINATOR, &credential),
+            owner: sas_program,
+            executable: false,
+            rent_epoch: 0,
+        },
+    )
+    .unwrap();
+    let (identity_pda, _) = Pubkey::find_program_address(
+        &[IDENTITY_SEED.as_bytes(), id_hash.as_ref()],
+        &pactum_core::id(),
+    );
     let link_ix = Instruction::new_with_bytes(
         pactum_core::id(),
-        &pactum_core::instruction::LinkSasIdentity {}.data(),
+        &pactum_core::instruction::LinkSasIdentity { id_hash }.data(),
         pactum_core::accounts::LinkSasIdentity {
             user_main: user_main_pda,
+            identity: identity_pda,
             authority: user.pubkey(),
+            payer: user.pubkey(),
             global_config: global_config_pda,
             sas_attestation,
+            sas_credential: gc.sas_credential,
+            system_program: system_program::id(),
         }
         .to_account_metas(None),
     );

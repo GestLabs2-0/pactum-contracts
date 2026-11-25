@@ -22,12 +22,12 @@
 |--------|-------|--------------|
 | `CoreConfig` | `["core_config"]` | `authority`, `global_config`, `bump` |
 | `UserMainAcc` | `["user_main", authority]` | `authority`, `sas_attestation: Option<Pubkey>`, `is_banned`, `bump` |
-| `Identity` | `["identity", id_hash]` | `verified_at`, `linked`, `bump` *(struct de compatibilidad)* |
-| `Marketplace` | `["marketplace", market_id]` | `market_id`, `committee`, `dispute_mode`, `requires_identity`, `min_judge_stake`, `max_judge_stake`, `min_arbiter_stake`, `min_jury_fee`, `pool_count`, `is_active`, `bump` |
+| `Identity` | `["identity", id_hash]` | `authority`, `verified_at`, `linked`, `bump` *(ancla de unicidad anti-Sybil por hash KYC/KYB)* |
+| `Marketplace` | `["marketplace", market_id]` | `market_id`, `committee`, `dispute_mode`, `storage_backend`, `kyb_credential`, `requires_identity`, `min_judge_stake`, `max_judge_stake`, `min_arbiter_stake`, `min_jury_fee`, `pool_count`, `is_active`, `bump` |
 | `Client` | `["client", marketplace, user_main]` | `marketplace`, `user_main`, `is_banned`, `completed_agreements`, `cancelled_agreements`, `disputes_won`, `disputes_lost`, `total_reviews`, `total_score`, `bump` |
 | `Provider` | `["provider", marketplace, user_main]` | `marketplace`, `user_main`, `is_banned`, `offer_count`, `completed_agreements`, `cancelled_agreements`, `disputes_won`, `disputes_lost`, `total_reviews`, `total_score`, `bump` |
 | `Judge` | `["judge", marketplace, user_main]` | `marketplace`, `user_main`, `staked_amount`, `pool_id`, `leaf_index`, `is_active_in_pool`, `active_disputes`, `cases_voted`, `cases_in_consensus`, `is_banned`, `bump` |
-| `Offer` | `["offer", provider, offer_id]` | `provider`, `marketplace`, `offer_id`, `base_price`, `pricing_type`, `approval_window_secs`, `provider_bond`, `required_client_bond`, `jury_fee`, `default_arbiter`, `content_ref`, `state_hash`, `is_active`, `rent_payer`, `bump` |
+| `Offer` | `["offer", provider, offer_id]` | `offer_id`, `base_price`, `pricing_type`, `approval_window_secs`, `provider_bond`, `required_client_bond`, `jury_fee`, `default_arbiter`, `content_ref`, `state_hash`, `is_active`, `rent_payer`, `bump` |
 | `ArbiterApplication` | `["arbiter_app", marketplace, authority]` | `marketplace`, `authority`, `sas_kyb_attestation`, `arbiter_fee`, `sla_secs`, `rent_payer`, `bump` |
 | `ArbiterProfile` | `["arbiter", marketplace, authority]` | `marketplace`, `authority`, `sas_kyb_attestation`, `arbiter_fee`, `staked_amount`, `sla_secs`, `active_disputes`, `cases_resolved`, `is_active`, `bump` |
 
@@ -39,7 +39,8 @@
 |-----------|-------------|-------------|--------|
 | **Identidad / Admin** | `initialize_core_config` | `global_config.authority` | Crea `CoreConfig` |
 | | `init_user_main` | `authority`, `payer` | Crea `UserMainAcc` |
-| | `link_sas_identity` | `authority` | Valida `sas_attestation.owner == global_config.sas_program` y guarda `sas_attestation` |
+| | `link_sas_identity(id_hash)` | `authority`, `payer` | Deserializa `Attestation`/`Credential`, crea `Identity(id_hash)` anti-Sybil y enlaza `sas_attestation` |
+| | `unlink_sas_identity` | `authority` | Limpia `sas_attestation` si fue cerrada o expiró en SAS (mantiene `Identity(id_hash)`) |
 | | `set_global_ban(banned)` | `global_config.authority` | Actualiza `user_main.is_banned` |
 | **Mercados / Roles** | `create_marketplace(market_id, params)` | `payer` *(permissionless)* | Crea `Marketplace` con su `committee` |
 | | `init_client` | `authority`, `payer` | Crea `Client` (valida `!is_banned` y SAS si `requires_identity`) |

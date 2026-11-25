@@ -16,7 +16,7 @@ use {
 fn wallet_cannot_call_cpi_update_judge_stake() {
     let admin = Keypair::new();
     let attacker = Keypair::new();
-    let (mut svm, global_config_pda) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
+    let (mut svm, global_config_pda, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
     svm.airdrop(&attacker.pubkey(), 10_000_000_000).unwrap();
 
     let core_id = pactum_core::id();

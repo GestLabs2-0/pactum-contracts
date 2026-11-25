@@ -12,7 +12,7 @@ fn create_offer_increments_provider_count_and_sets_rent_payer() {
     let admin = Keypair::new();
     let provider_auth = Keypair::new();
     let relayer = Keypair::new();
-    let (mut svm, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
+    let (mut svm, _, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
     svm.airdrop(&relayer.pubkey(), 10_000_000_000).unwrap();
 
     let user_main_pda = common::create_user_main(&mut svm, &provider_auth, &relayer);

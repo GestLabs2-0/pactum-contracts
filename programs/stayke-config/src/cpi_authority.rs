@@ -82,6 +82,7 @@ mod tests {
             escrow_program: escrow,
             disputes_program: disputes,
             treasury_program: treasury,
+            sas_credential: Pubkey::new_unique(),
             free_ops: 0,
             bump: 255,
         }

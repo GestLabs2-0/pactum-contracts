@@ -27,7 +27,6 @@ pub struct UpdateOffer<'info> {
             offer.offer_id.to_le_bytes().as_ref(),
         ],
         bump = offer.bump,
-        has_one = provider,
     )]
     pub offer: Account<'info, Offer>,
 

@@ -7,23 +7,24 @@ use {
         InstructionData, ToAccountMetas,
     },
     pactum_core::{
-        constants::{ARBITER_APP_SEED, ARBITER_SEED},
+        constants::{ARBITER_APP_SEED, ARBITER_SEED, IDENTITY_SEED},
         state::{ArbiterProfile, DisputeMode},
     },
-    solana_account::Account,
     solana_keypair::Keypair,
+    solana_sha256_hasher::hash,
     solana_signer::Signer,
 };
 
 fn setup_application(
     svm: &mut litesvm::LiteSVM,
     global_config_pda: Pubkey,
-    sas_program: Pubkey,
+    sas: (Pubkey, Pubkey),
     committee: &Keypair,
     arbiter: &Keypair,
     payer: &Keypair,
     market_id: u64,
 ) -> (Pubkey, Pubkey, Pubkey) {
+    let (sas_program, sas_credential) = sas;
     let market_pda = common::create_marketplace_account(
         svm,
         market_id,
@@ -32,20 +33,22 @@ fn setup_application(
         false,
         payer,
     );
-    let sas_kyb = Pubkey::new_unique();
-    svm.set_account(
-        sas_kyb,
-        Account {
-            lamports: 1_000_000,
-            data: vec![1],
-            owner: sas_program,
-            executable: false,
-            rent_epoch: 0,
-        },
-    )
-    .unwrap();
+    let signer = Keypair::new();
+    let raw_kyb = [1u8; 32];
+    let id_hash = hash(&raw_kyb).to_bytes();
+    let sas_kyb = common::seed_sas_credential_and_attestation(
+        svm,
+        sas_program,
+        sas_credential,
+        signer.pubkey(),
+        arbiter.pubkey(),
+        raw_kyb,
+        0,
+    );
 
     let core_id = pactum_core::id();
+    let (identity_pda, _) =
+        Pubkey::find_program_address(&[IDENTITY_SEED.as_bytes(), id_hash.as_ref()], &core_id);
     let (app_pda, _) = Pubkey::find_program_address(
         &[
             ARBITER_APP_SEED.as_bytes(),
@@ -68,13 +71,16 @@ fn setup_application(
         &pactum_core::instruction::ApplyAsArbiter {
             arbiter_fee: 5_000_000,
             sla_secs: 172_800,
+            id_hash,
         }
         .data(),
         pactum_core::accounts::ApplyAsArbiter {
             arbiter_application: app_pda,
+            identity: identity_pda,
             marketplace: market_pda,
             global_config: global_config_pda,
             sas_kyb_attestation: sas_kyb,
+            sas_credential,
             authority: arbiter.pubkey(),
             payer: payer.pubkey(),
             system_program: system_program::id(),
@@ -92,14 +98,14 @@ fn review_arbiter_approve_creates_profile_and_closes_application() {
     let committee = Keypair::new();
     let arbiter = Keypair::new();
     let payer = Keypair::new();
-    let (mut svm, global_config_pda) = common::setup_svm(sas_program, admin.pubkey());
+    let (mut svm, global_config_pda, gc) = common::setup_svm(sas_program, admin.pubkey());
     svm.airdrop(&committee.pubkey(), 10_000_000_000).unwrap();
     svm.airdrop(&payer.pubkey(), 10_000_000_000).unwrap();
 
     let (market_pda, app_pda, profile_pda) = setup_application(
         &mut svm,
         global_config_pda,
-        sas_program,
+        (sas_program, gc.sas_credential),
         &committee,
         &arbiter,
         &payer,
@@ -137,14 +143,14 @@ fn review_arbiter_reject_closes_application_without_profile() {
     let committee = Keypair::new();
     let arbiter = Keypair::new();
     let payer = Keypair::new();
-    let (mut svm, global_config_pda) = common::setup_svm(sas_program, admin.pubkey());
+    let (mut svm, global_config_pda, gc) = common::setup_svm(sas_program, admin.pubkey());
     svm.airdrop(&committee.pubkey(), 10_000_000_000).unwrap();
     svm.airdrop(&payer.pubkey(), 10_000_000_000).unwrap();
 
     let (market_pda, app_pda, profile_pda) = setup_application(
         &mut svm,
         global_config_pda,
-        sas_program,
+        (sas_program, gc.sas_credential),
         &committee,
         &arbiter,
         &payer,

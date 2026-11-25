@@ -19,7 +19,7 @@ fn init_judge_rejected_on_arbiter_only_marketplace() {
     let admin = Keypair::new();
     let user = Keypair::new();
     let payer = Keypair::new();
-    let (mut svm, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
+    let (mut svm, _, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
     svm.airdrop(&payer.pubkey(), 10_000_000_000).unwrap();
 
     let user_main_pda = common::create_user_main(&mut svm, &user, &payer);
@@ -61,7 +61,7 @@ fn init_judge_succeeds_on_decentralized_jury_marketplace() {
     let admin = Keypair::new();
     let user = Keypair::new();
     let payer = Keypair::new();
-    let (mut svm, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
+    let (mut svm, _, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
     svm.airdrop(&payer.pubkey(), 10_000_000_000).unwrap();
 
     let user_main_pda = common::create_user_main(&mut svm, &user, &payer);

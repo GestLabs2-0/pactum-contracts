@@ -20,7 +20,7 @@ fn revoke_arbiter_deactivates_profile() {
     let admin = Keypair::new();
     let committee = Keypair::new();
     let arbiter = Keypair::new();
-    let (mut svm, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
+    let (mut svm, _, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
     svm.airdrop(&committee.pubkey(), 10_000_000_000).unwrap();
 
     let market_pda = common::create_marketplace_account(

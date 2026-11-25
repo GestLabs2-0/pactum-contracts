@@ -89,8 +89,6 @@ pub fn handler_create_offer(ctx: Context<CreateOffer>, params: CreateOfferParams
         .ok_or(PactumCoreError::OfferCountOverflow)?;
 
     let offer = &mut ctx.accounts.offer;
-    offer.provider = provider.key();
-    offer.marketplace = ctx.accounts.marketplace.key();
     offer.offer_id = offer_id;
     offer.base_price = params.base_price;
     offer.pricing_type = params.pricing_type;
