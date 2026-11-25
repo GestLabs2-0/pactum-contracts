@@ -8,7 +8,7 @@
 ## Camino rápido
 
 1. **Inicialización:** `initialize_config(params)` → crea `GlobalConfig` (`["global_config"]`) y la cuenta token `platform_vault` (`["platform_vault_token"]`) controlada por `platform_vault_pda`.
-2. **Gobernanza / ajustes:** `update_config(params)` → permite a `authority` ajustar *fees*, credenciales SAS, IDs de programas o rotar `authority`.
+2. **Gobernanza / ajustes:** `update_config(params)` → permite a `authority` ajustar *fees* y credenciales SAS (`authority` y la *allowlist* de programas son inmutables tras `initialize_config`).
 3. **Retiro de comisiones:** `withdraw_fees(amount)` → transfiere USDC desde `platform_vault` hacia una cuenta destino mediante `transfer_checked`.
 
 ### Diagrama de flujo
@@ -38,7 +38,7 @@ flowchart TD
 | Instrucción | Quién firma | Para qué sirve |
 |-------------|-------------|----------------|
 | `initialize_config(params)` | `authority` | Crea `GlobalConfig` y la bóveda `platform_vault`; fija los IDs compilados de `core`, `escrow`, `disputes` y `treasury`, más `protocol_fee_bps`, `max_protocol_fee`, `dispute_escalation_fee`, `sas_program` y `sas_credential` |
-| `update_config(params)` | `global_config.authority` | Actualiza parámetros económicos, credenciales SAS, *allowlist* de programas o rota `authority` (rechaza `Pubkey::default()`) |
+| `update_config(params)` | `global_config.authority` | Actualiza parámetros económicos y credenciales SAS (`authority` y la *allowlist* de programas son inmutables tras `initialize_config`) |
 | `withdraw_fees(amount)` | `global_config.authority` | Retira comisiones acumuladas en `platform_vault` hacia una cuenta USDC del mismo *mint* usando `transfer_checked` |
 
 ### Verificación
