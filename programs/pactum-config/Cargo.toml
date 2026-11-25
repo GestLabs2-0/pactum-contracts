@@ -1,12 +1,12 @@
 [package]
-name = "stayke-config"
+name = "pactum-config"
 version = "0.1.0"
-description = "Config library for Stayke"
+description = "Global configuration, fee vault, and CPI allowlist registry for Pactum."
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "stayke_config"
+name = "pactum_config"
 
 [features]
 default = []
@@ -19,9 +19,8 @@ anchor-debug = []
 custom-heap = []
 custom-panic = []
 
-
 [dependencies]
-anchor-lang = {version = "1.0.2"}
+anchor-lang = { version = "1.0.2" }
 anchor-spl = "1.0.2"
 
 [dev-dependencies]
@@ -31,7 +30,6 @@ solana-message = "3.0.1"
 solana-transaction = "3.0.2"
 solana-signer = "3.0.0"
 solana-keypair = "3.0.1"
-
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

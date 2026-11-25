@@ -1,5 +1,5 @@
 [workspace]
-members = ["programs/stayke-config", "programs/pactum-core"]
+members = ["programs/pactum-config", "programs/pactum-core"]
 resolver = "2"
 
 [profile.release]

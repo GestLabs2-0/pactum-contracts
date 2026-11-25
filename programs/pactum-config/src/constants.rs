@@ -13,7 +13,10 @@ pub const PLATFORM_VAULT_CONFIG_SEED: &str = "platform_vault_token";
 #[constant]
 pub const CPI_AUTHORITY_SEED: &str = "cpi_authority";
 
-/// Compiled Stayke program IDs persisted on `GlobalConfig` at init.
+#[constant]
+pub const MAX_PROTOCOL_FEE_BPS: u16 = 10_000;
+
+/// Compiled Pactum program IDs persisted on `GlobalConfig` at init.
 /// Must match each crate's `declare_id!` and `Anchor.toml` `[programs.devnet]`.
 pub const CORE_PROGRAM_ID: Pubkey =
     Pubkey::from_str_const("2u1JrVasLvuGR5s3n84p5yaitHU2PGa8VjWZ7P2Eescm");

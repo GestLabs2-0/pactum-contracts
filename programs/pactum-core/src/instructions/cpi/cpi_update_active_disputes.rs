@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use stayke_config::{assert_cpi_authority, AllowedCaller, GlobalConfig, GLOBAL_CONFIG_SEED};
+use pactum_config::{assert_cpi_authority, AllowedCaller, GlobalConfig, GLOBAL_CONFIG_SEED};
 
 use super::helpers::apply_i8_delta;
 use crate::{
@@ -18,7 +18,7 @@ pub struct CpiUpdateActiveDisputes<'info> {
     #[account(
         seeds = [GLOBAL_CONFIG_SEED.as_bytes()],
         bump = global_config.bump,
-        seeds::program = stayke_config::ID,
+        seeds::program = pactum_config::ID,
     )]
     pub global_config: Account<'info, GlobalConfig>,
 

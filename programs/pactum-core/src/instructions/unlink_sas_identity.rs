@@ -1,5 +1,5 @@
 use anchor_lang::{prelude::*, solana_program::clock::Clock};
-use stayke_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
+use pactum_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
 
 use crate::{
     constants::USER_MAIN_SEED, error::PactumCoreError, state::UserMainAcc, Attestation,
@@ -22,7 +22,7 @@ pub struct UnlinkSasIdentity<'info> {
     #[account(
         seeds = [GLOBAL_CONFIG_SEED.as_bytes()],
         bump = global_config.bump,
-        seeds::program = stayke_config::ID,
+        seeds::program = pactum_config::ID,
     )]
     pub global_config: Account<'info, GlobalConfig>,
 
