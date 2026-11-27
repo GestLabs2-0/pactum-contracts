@@ -45,4 +45,11 @@ pub mod pactum_escrow {
     pub fn expire_agreement(ctx: Context<ExpireAgreement>) -> Result<()> {
         handler_expire_agreement(ctx)
     }
+
+    pub fn propose_agreement(
+        ctx: Context<ProposeAgreement>,
+        params: ProposeAgreementParams,
+    ) -> Result<()> {
+        handler_propose_agreement(ctx, params)
+    }
 }
