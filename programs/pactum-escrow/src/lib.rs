@@ -63,4 +63,8 @@ pub mod pactum_escrow {
     pub fn cancel_proposal(ctx: Context<CancelProposal>) -> Result<()> {
         handler_cancel_proposal(ctx)
     }
+
+    pub fn expire_proposal(ctx: Context<ExpireProposal>) -> Result<()> {
+        handler_expire_proposal(ctx)
+    }
 }
