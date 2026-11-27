@@ -166,4 +166,8 @@ pub mod pactum_escrow {
     pub fn close_reservation(ctx: Context<CloseReservation>) -> Result<()> {
         handler_close_reservation(ctx)
     }
+
+    pub fn cpi_freeze_agreement(ctx: Context<CpiFreezeAgreement>) -> Result<()> {
+        handler_cpi_freeze_agreement(ctx)
+    }
 }
