@@ -1,4 +1,5 @@
 pub mod client_cancel_reservation;
+pub mod client_cancel_reservation_cross_year;
 pub mod create_reservation;
 pub mod create_reservation_cross_year;
 pub mod expire_reservation;
@@ -11,6 +12,7 @@ pub mod reservation_completes;
 pub mod reservation_starts;
 
 pub use client_cancel_reservation::*;
+pub use client_cancel_reservation_cross_year::*;
 pub use create_reservation::*;
 pub use create_reservation_cross_year::*;
 pub use expire_reservation::*;
