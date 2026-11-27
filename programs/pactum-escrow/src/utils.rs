@@ -5,16 +5,26 @@ use anchor_spl::token_interface::{
 };
 
 use crate::{
-    constants::{BPS_DENOMINATOR, CPI_AUTHORITY_SEED, ESCROW_VAULT_SEED, SECONDS_PER_DAY},
+    constants::{
+        BPS_DENOMINATOR, CPI_AUTHORITY_SEED, DEFAULT_CANCELLATION_WINDOW_HOURS,
+        DEFAULT_CLIENT_REFUND_PCT, ESCROW_VAULT_SEED, PERCENTAGE_DENOMINATOR, SECONDS_PER_DAY,
+        SECONDS_PER_HOUR,
+    },
     error::PactumEscrowError,
-    events::{AgreementCancelled, AgreementCompleted, MilestoneReleased},
-    state::{Agreement, AgreementStatus, BookingDays},
+    events::{
+        AgreementCancelled, AgreementCompleted, MilestoneReleased, ReservationCancelled,
+        ReservationCreated,
+    },
+    state::{Agreement, AgreementStatus, BookingDays, DateRangeAgreement, DateRangeStatus},
 };
 use pactum_config::GlobalConfig;
 use pactum_core::{
     cpi::{accounts::CpiRecordAgreementOutcome, cpi_record_agreement_outcome},
     program::PactumCore,
-    state::{AgreementOutcome, Client, IntegratorProfile, ParticipantRole, Provider},
+    state::{
+        AgreementOutcome, CancellationPolicy, Client, IntegratorProfile, Marketplace, Offer,
+        ParticipantRole, Provider,
+    },
 };
 
 /// Refunds `total_amount + client_bond` to `client_token_account`, closes `escrow_vault` to
@@ -324,6 +334,373 @@ pub fn release_current_milestone<'info>(
     emit!(AgreementCompleted {
         agreement: agreement_key,
         completed_at: now,
+    });
+    Ok(())
+}
+
+/// Initializes a `DateRangeAgreement` and deposits `total_amount + client_bond` into `escrow_vault`.
+#[allow(clippy::too_many_arguments)]
+pub fn init_reservation_state<'info>(
+    reservation: &mut Account<'info, DateRangeAgreement>,
+    marketplace: &Account<'info, Marketplace>,
+    offer: &Account<'info, Offer>,
+    client: &Account<'info, Client>,
+    provider: &Account<'info, Provider>,
+    integrator: &Option<Box<Account<'info, IntegratorProfile>>>,
+    client_authority: &Signer<'info>,
+    payer: &Signer<'info>,
+    client_token_account: &InterfaceAccount<'info, TokenAccount>,
+    escrow_vault: &InterfaceAccount<'info, TokenAccount>,
+    usdc_mint: &InterfaceAccount<'info, Mint>,
+    token_program: &Interface<'info, TokenInterface>,
+    check_in: i64,
+    check_out: i64,
+    arbiter: Option<Pubkey>,
+    escrow_vault_bump: u8,
+    bump: u8,
+) -> Result<()> {
+    let now = Clock::get()?.unix_timestamp;
+    require!(check_in > now, PactumEscrowError::InvalidCheckInOut);
+    let nights = count_nights(check_in, check_out)?;
+    let nightly_rate = offer
+        .base_price
+        .ok_or(PactumEscrowError::InvalidOfferParams)?;
+    require!(nightly_rate > 0, PactumEscrowError::ZeroAmount);
+    let total_amount = nights
+        .checked_mul(nightly_rate)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    let deposit = total_amount
+        .checked_add(offer.required_client_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+
+    let (integrator_key, integrator_fee_bps) = resolve_integrator(integrator, marketplace.key())?;
+
+    transfer_from_user(
+        token_program,
+        client_token_account,
+        escrow_vault,
+        usdc_mint,
+        client_authority,
+        deposit,
+    )?;
+
+    let policy = offer.cancellation_policy.unwrap_or(CancellationPolicy {
+        window_hours: DEFAULT_CANCELLATION_WINDOW_HOURS,
+        client_refund_pct: DEFAULT_CLIENT_REFUND_PCT,
+    });
+
+    reservation.marketplace = marketplace.key();
+    reservation.offer = offer.key();
+    reservation.client = client.key();
+    reservation.provider = provider.key();
+    reservation.integrator = integrator_key;
+    reservation.integrator_fee_bps = integrator_fee_bps;
+    reservation.arbiter = arbiter.or(offer.default_arbiter);
+    reservation.jury_fee = offer.jury_fee;
+    reservation.check_in = check_in;
+    reservation.check_out = check_out;
+    reservation.total_amount = total_amount;
+    reservation.provider_bond = offer.provider_bond;
+    reservation.client_bond = offer.required_client_bond;
+    reservation.cancellation_policy = policy;
+    reservation.provider_cancellation_penalty_pct = marketplace.provider_cancellation_penalty_pct;
+    reservation.state_hash = offer.state_hash;
+    reservation.status = DateRangeStatus::Pending;
+    reservation.previous_status = None;
+    reservation.updated_at = now;
+    reservation.client_reviewed = false;
+    reservation.provider_reviewed = false;
+    reservation.rent_payer = payer.key();
+    reservation.escrow_vault_bump = escrow_vault_bump;
+    reservation.bump = bump;
+
+    emit!(ReservationCreated {
+        reservation: reservation.key(),
+        offer: offer.key(),
+        client: client.key(),
+        provider: provider.key(),
+        check_in,
+        check_out,
+        total_amount,
+    });
+    Ok(())
+}
+
+/// Refunds `total_amount + client_bond` for a `Pending` reservation, closes `escrow_vault`, and marks `Cancelled`.
+#[allow(clippy::too_many_arguments)]
+pub fn close_pending_reservation<'info>(
+    reservation: &mut Account<'info, DateRangeAgreement>,
+    escrow_vault: &InterfaceAccount<'info, TokenAccount>,
+    client_token_account: &InterfaceAccount<'info, TokenAccount>,
+    usdc_mint: &InterfaceAccount<'info, Mint>,
+    rent_payer: &AccountInfo<'info>,
+    token_program: &Interface<'info, TokenInterface>,
+) -> Result<()> {
+    let refund = reservation
+        .total_amount
+        .checked_add(reservation.client_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    let key = reservation.key();
+    let vault_bump = reservation.escrow_vault_bump;
+
+    transfer_from_vault(
+        token_program,
+        escrow_vault,
+        client_token_account,
+        usdc_mint,
+        key,
+        vault_bump,
+        refund,
+    )?;
+    close_vault(token_program, escrow_vault, rent_payer, key, vault_bump)?;
+
+    reservation.status = DateRangeStatus::Cancelled;
+    reservation.updated_at = Clock::get()?.unix_timestamp;
+
+    emit!(ReservationCancelled {
+        reservation: key,
+        client_refund: refund,
+        provider_payout: 0,
+        protocol_fee: 0,
+        integrator_fee: 0,
+    });
+    Ok(())
+}
+
+/// Executes client-initiated cancellation of an `Accepted` reservation before `check_in`.
+#[allow(clippy::too_many_arguments)]
+pub fn settle_client_cancel_reservation<'info>(
+    reservation: &mut Account<'info, DateRangeAgreement>,
+    global_config: &Account<'info, GlobalConfig>,
+    client: &Account<'info, Client>,
+    provider: &Account<'info, Provider>,
+    integrator: &Option<Box<Account<'info, IntegratorProfile>>>,
+    escrow_vault: &InterfaceAccount<'info, TokenAccount>,
+    platform_vault: &InterfaceAccount<'info, TokenAccount>,
+    client_token_account: &InterfaceAccount<'info, TokenAccount>,
+    provider_token_account: &InterfaceAccount<'info, TokenAccount>,
+    integrator_token_account: &Option<Box<InterfaceAccount<'info, TokenAccount>>>,
+    usdc_mint: &InterfaceAccount<'info, Mint>,
+    rent_payer: &AccountInfo<'info>,
+    cpi_authority: &AccountInfo<'info>,
+    cpi_authority_bump: u8,
+    core_program: &Program<'info, PactumCore>,
+    token_program: &Interface<'info, TokenInterface>,
+) -> Result<()> {
+    let now = Clock::get()?.unix_timestamp;
+    require!(
+        now < reservation.check_in,
+        PactumEscrowError::DeadlinePassed
+    );
+
+    let window_secs = i64::from(reservation.cancellation_policy.window_hours)
+        .checked_mul(SECONDS_PER_HOUR)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    let time_until_check_in = reservation
+        .check_in
+        .checked_sub(now)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    let inside_window = time_until_check_in <= window_secs;
+
+    let (client_refund, protocol_fee, integrator_fee, provider_payout) = if !inside_window {
+        (reservation.total_amount, 0, 0, 0)
+    } else {
+        let refund_u128 = u128::from(reservation.total_amount)
+            .checked_mul(u128::from(
+                reservation.cancellation_policy.client_refund_pct,
+            ))
+            .ok_or(PactumEscrowError::MathOverflow)?
+            .checked_div(PERCENTAGE_DENOMINATOR)
+            .ok_or(PactumEscrowError::MathOverflow)?;
+        let client_refund =
+            u64::try_from(refund_u128).map_err(|_| PactumEscrowError::MathOverflow)?;
+        let remainder = reservation
+            .total_amount
+            .checked_sub(client_refund)
+            .ok_or(PactumEscrowError::MathOverflow)?;
+        let fees = calculate_fees(
+            remainder,
+            global_config.protocol_fee_bps,
+            global_config.max_protocol_fee,
+            reservation.integrator.is_some(),
+            reservation.integrator_fee_bps,
+        )?;
+        (
+            client_refund,
+            fees.protocol_fee,
+            fees.integrator_fee,
+            fees.provider_payout,
+        )
+    };
+
+    let key = reservation.key();
+    let vault_bump = reservation.escrow_vault_bump;
+    let total_client = client_refund
+        .checked_add(reservation.client_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    let total_provider = provider_payout
+        .checked_add(reservation.provider_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+
+    transfer_from_vault(
+        token_program,
+        escrow_vault,
+        client_token_account,
+        usdc_mint,
+        key,
+        vault_bump,
+        total_client,
+    )?;
+    transfer_from_vault(
+        token_program,
+        escrow_vault,
+        platform_vault,
+        usdc_mint,
+        key,
+        vault_bump,
+        protocol_fee,
+    )?;
+    pay_integrator_if_needed(
+        reservation.integrator,
+        integrator_fee,
+        integrator,
+        integrator_token_account,
+        escrow_vault,
+        usdc_mint,
+        token_program,
+        global_config.usdc_mint,
+        key,
+        vault_bump,
+    )?;
+    transfer_from_vault(
+        token_program,
+        escrow_vault,
+        provider_token_account,
+        usdc_mint,
+        key,
+        vault_bump,
+        total_provider,
+    )?;
+    close_vault(token_program, escrow_vault, rent_payer, key, vault_bump)?;
+
+    reservation.status = DateRangeStatus::Cancelled;
+    reservation.updated_at = now;
+
+    cpi_record_outcomes(
+        core_program,
+        client,
+        provider,
+        global_config,
+        cpi_authority,
+        cpi_authority_bump,
+        AgreementOutcome::Cancelled,
+    )?;
+
+    emit!(ReservationCancelled {
+        reservation: key,
+        client_refund,
+        provider_payout,
+        protocol_fee,
+        integrator_fee,
+    });
+    Ok(())
+}
+
+/// Executes provider-initiated cancellation of an `Accepted` reservation before `check_in`.
+#[allow(clippy::too_many_arguments)]
+pub fn settle_provider_cancel_reservation<'info>(
+    reservation: &mut Account<'info, DateRangeAgreement>,
+    global_config: &Account<'info, GlobalConfig>,
+    client: &Account<'info, Client>,
+    provider: &Account<'info, Provider>,
+    escrow_vault: &InterfaceAccount<'info, TokenAccount>,
+    client_token_account: &InterfaceAccount<'info, TokenAccount>,
+    provider_token_account: &InterfaceAccount<'info, TokenAccount>,
+    usdc_mint: &InterfaceAccount<'info, Mint>,
+    rent_payer: &AccountInfo<'info>,
+    cpi_authority: &AccountInfo<'info>,
+    cpi_authority_bump: u8,
+    core_program: &Program<'info, PactumCore>,
+    token_program: &Interface<'info, TokenInterface>,
+) -> Result<()> {
+    let now = Clock::get()?.unix_timestamp;
+    require!(
+        now < reservation.check_in,
+        PactumEscrowError::DeadlinePassed
+    );
+
+    let window_secs = i64::from(reservation.cancellation_policy.window_hours)
+        .checked_mul(SECONDS_PER_HOUR)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    let time_until_check_in = reservation
+        .check_in
+        .checked_sub(now)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    let inside_window = time_until_check_in <= window_secs;
+
+    let slash = if inside_window && reservation.provider_bond > 0 {
+        let slash_u128 = u128::from(reservation.provider_bond)
+            .checked_mul(u128::from(reservation.provider_cancellation_penalty_pct))
+            .ok_or(PactumEscrowError::MathOverflow)?
+            .checked_div(PERCENTAGE_DENOMINATOR)
+            .ok_or(PactumEscrowError::MathOverflow)?;
+        u64::try_from(slash_u128).map_err(|_| PactumEscrowError::MathOverflow)?
+    } else {
+        0
+    };
+    let provider_refund = reservation
+        .provider_bond
+        .checked_sub(slash)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    let total_client = reservation
+        .total_amount
+        .checked_add(reservation.client_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?
+        .checked_add(slash)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+
+    let key = reservation.key();
+    let vault_bump = reservation.escrow_vault_bump;
+
+    transfer_from_vault(
+        token_program,
+        escrow_vault,
+        client_token_account,
+        usdc_mint,
+        key,
+        vault_bump,
+        total_client,
+    )?;
+    transfer_from_vault(
+        token_program,
+        escrow_vault,
+        provider_token_account,
+        usdc_mint,
+        key,
+        vault_bump,
+        provider_refund,
+    )?;
+    close_vault(token_program, escrow_vault, rent_payer, key, vault_bump)?;
+
+    reservation.status = DateRangeStatus::Cancelled;
+    reservation.updated_at = now;
+
+    cpi_record_outcomes(
+        core_program,
+        client,
+        provider,
+        global_config,
+        cpi_authority,
+        cpi_authority_bump,
+        AgreementOutcome::Cancelled,
+    )?;
+
+    emit!(ReservationCancelled {
+        reservation: key,
+        client_refund: total_client,
+        provider_payout: provider_refund,
+        protocol_fee: 0,
+        integrator_fee: 0,
     });
     Ok(())
 }

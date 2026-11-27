@@ -86,4 +86,11 @@ pub mod pactum_escrow {
     pub fn cancel_agreement(ctx: Context<CancelAgreement>) -> Result<()> {
         handler_cancel_agreement(ctx)
     }
+
+    pub fn create_reservation(
+        ctx: Context<CreateReservation>,
+        params: CreateReservationParams,
+    ) -> Result<()> {
+        handler_create_reservation(ctx, params)
+    }
 }
