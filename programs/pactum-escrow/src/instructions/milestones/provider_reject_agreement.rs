@@ -9,9 +9,8 @@ use pactum_core::{
 use crate::{
     constants::{AGREEMENT_SEED, ESCROW_CONFIG_SEED, ESCROW_VAULT_SEED},
     error::PactumEscrowError,
-    events::AgreementCancelled,
     state::{Agreement, AgreementStatus, EscrowConfig},
-    utils::{close_vault, transfer_from_vault},
+    utils::refund_and_close_pending_agreement,
 };
 
 #[derive(Accounts)]
@@ -113,33 +112,13 @@ pub struct ProviderRejectAgreement<'info> {
 }
 
 pub fn handler_provider_reject_agreement(ctx: Context<ProviderRejectAgreement>) -> Result<()> {
-    let agreement = &ctx.accounts.agreement;
-    let refund = agreement
-        .total_amount
-        .checked_add(agreement.client_bond)
-        .ok_or(PactumEscrowError::MathOverflow)?;
-
-    transfer_from_vault(
-        &ctx.accounts.token_program,
+    refund_and_close_pending_agreement(
+        &ctx.accounts.agreement,
         &ctx.accounts.escrow_vault,
         &ctx.accounts.client_token_account,
         &ctx.accounts.usdc_mint,
-        agreement.key(),
-        agreement.escrow_vault_bump,
-        refund,
-    )?;
-
-    close_vault(
-        &ctx.accounts.token_program,
-        &ctx.accounts.escrow_vault,
         &ctx.accounts.rent_payer.to_account_info(),
-        agreement.key(),
-        agreement.escrow_vault_bump,
-    )?;
-
-    emit!(AgreementCancelled {
-        agreement: agreement.key(),
-        reason: "provider_rejected".to_string(),
-    });
-    Ok(())
+        &ctx.accounts.token_program,
+        "provider_rejected",
+    )
 }

@@ -41,4 +41,8 @@ pub mod pactum_escrow {
     pub fn provider_reject_agreement(ctx: Context<ProviderRejectAgreement>) -> Result<()> {
         handler_provider_reject_agreement(ctx)
     }
+
+    pub fn expire_agreement(ctx: Context<ExpireAgreement>) -> Result<()> {
+        handler_expire_agreement(ctx)
+    }
 }

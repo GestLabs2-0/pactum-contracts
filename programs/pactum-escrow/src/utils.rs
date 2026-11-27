@@ -7,9 +7,52 @@ use anchor_spl::token_interface::{
 use crate::{
     constants::{BPS_DENOMINATOR, ESCROW_VAULT_SEED, SECONDS_PER_DAY},
     error::PactumEscrowError,
-    state::BookingDays,
+    events::AgreementCancelled,
+    state::{Agreement, BookingDays},
 };
 use pactum_core::state::IntegratorProfile;
+
+/// Refunds `total_amount + client_bond` to `client_token_account`, closes `escrow_vault` to
+/// `rent_payer`, and emits `AgreementCancelled`.
+#[allow(clippy::too_many_arguments)]
+pub fn refund_and_close_pending_agreement<'info>(
+    agreement: &Account<'info, Agreement>,
+    escrow_vault: &InterfaceAccount<'info, TokenAccount>,
+    client_token_account: &InterfaceAccount<'info, TokenAccount>,
+    usdc_mint: &InterfaceAccount<'info, Mint>,
+    rent_payer: &AccountInfo<'info>,
+    token_program: &Interface<'info, TokenInterface>,
+    reason: &str,
+) -> Result<()> {
+    let refund = agreement
+        .total_amount
+        .checked_add(agreement.client_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+
+    transfer_from_vault(
+        token_program,
+        escrow_vault,
+        client_token_account,
+        usdc_mint,
+        agreement.key(),
+        agreement.escrow_vault_bump,
+        refund,
+    )?;
+
+    close_vault(
+        token_program,
+        escrow_vault,
+        rent_payer,
+        agreement.key(),
+        agreement.escrow_vault_bump,
+    )?;
+
+    emit!(AgreementCancelled {
+        agreement: agreement.key(),
+        reason: reason.to_string(),
+    });
+    Ok(())
+}
 
 /// Validates an optional `IntegratorProfile` against `marketplace` and returns `(key, fee_bps)`.
 pub fn resolve_integrator(

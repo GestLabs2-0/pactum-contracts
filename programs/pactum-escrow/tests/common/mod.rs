@@ -116,6 +116,7 @@ pub fn warp_to_ts(svm: &mut LiteSVM, unix_timestamp: i64) {
     let mut clock = svm.get_sysvar::<Clock>();
     clock.unix_timestamp = unix_timestamp;
     svm.set_sysvar(&clock);
+    svm.expire_blockhash();
 }
 
 /// Boots LiteSVM with `pactum_config`, `pactum_core`, `pactum_escrow`, `GlobalConfig`,
