@@ -59,4 +59,8 @@ pub mod pactum_escrow {
     ) -> Result<()> {
         handler_fund_agreement(ctx, expected_contract_hash)
     }
+
+    pub fn cancel_proposal(ctx: Context<CancelProposal>) -> Result<()> {
+        handler_cancel_proposal(ctx)
+    }
 }
