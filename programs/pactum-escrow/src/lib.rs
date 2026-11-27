@@ -67,4 +67,11 @@ pub mod pactum_escrow {
     pub fn expire_proposal(ctx: Context<ExpireProposal>) -> Result<()> {
         handler_expire_proposal(ctx)
     }
+
+    pub fn submit_milestone(
+        ctx: Context<SubmitMilestone>,
+        deliverable_hash: [u8; 32],
+    ) -> Result<()> {
+        handler_submit_milestone(ctx, deliverable_hash)
+    }
 }
