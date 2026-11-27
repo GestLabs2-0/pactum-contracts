@@ -93,4 +93,11 @@ pub mod pactum_escrow {
     ) -> Result<()> {
         handler_create_reservation(ctx, params)
     }
+
+    pub fn create_reservation_cross_year(
+        ctx: Context<CreateReservationCrossYear>,
+        params: CreateReservationParams,
+    ) -> Result<()> {
+        handler_create_reservation_cross_year(ctx, params)
+    }
 }
