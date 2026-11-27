@@ -108,4 +108,10 @@ pub mod pactum_escrow {
     pub fn provider_reject_reservation(ctx: Context<ProviderRejectReservation>) -> Result<()> {
         handler_provider_reject_reservation(ctx)
     }
+
+    pub fn provider_reject_reservation_cross_year(
+        ctx: Context<ProviderRejectReservationCrossYear>,
+    ) -> Result<()> {
+        handler_provider_reject_reservation_cross_year(ctx)
+    }
 }
