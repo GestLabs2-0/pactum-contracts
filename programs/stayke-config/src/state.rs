@@ -21,6 +21,9 @@ pub struct GlobalConfig {
     /// Bump of the platform vault authority PDA.
     pub platform_vault_bump: u8,
 
+    /// Solana Attestation Service program ID.
+    pub sas_program: Pubkey,
+
     /// Stayke core program ID (CPI allowlist SoT).
     pub core_program: Pubkey,
     /// Stayke escrow program ID (CPI allowlist SoT).
@@ -29,6 +32,8 @@ pub struct GlobalConfig {
     pub disputes_program: Pubkey,
     /// Stayke treasury program ID (CPI allowlist SoT).
     pub treasury_program: Pubkey,
+
+    pub sas_credential: Pubkey,
 
     pub bump: u8,
 }
