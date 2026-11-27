@@ -62,7 +62,6 @@ fn apply_as_arbiter_stores_application_and_creates_identity() {
         &pactum_core::instruction::ApplyAsArbiter {
             arbiter_fee: 5_000_000,
             sla_secs: 172_800,
-            id_hash,
         }
         .data(),
         pactum_core::accounts::ApplyAsArbiter {
@@ -153,7 +152,6 @@ fn apply_as_arbiter_allows_same_wallet_across_markets_and_blocks_second_wallet()
             &pactum_core::instruction::ApplyAsArbiter {
                 arbiter_fee: 5_000_000,
                 sla_secs: 172_800,
-                id_hash,
             }
             .data(),
             pactum_core::accounts::ApplyAsArbiter {
@@ -195,7 +193,6 @@ fn apply_as_arbiter_allows_same_wallet_across_markets_and_blocks_second_wallet()
         &pactum_core::instruction::ApplyAsArbiter {
             arbiter_fee: 5_000_000,
             sla_secs: 172_800,
-            id_hash,
         }
         .data(),
         pactum_core::accounts::ApplyAsArbiter {
@@ -244,7 +241,9 @@ fn apply_as_arbiter_enforces_marketplace_kyb_credential() {
                 storage_backend: StorageBackend::Arweave,
                 integrator_policy: pactum_core::state::IntegratorPolicy::Permissionless,
                 kyb_credential: Some(market_kyb_cred),
-                requires_identity: false,
+                client_requires_kyc: false,
+                provider_identity: pactum_core::state::RoleIdentityConfig::none(),
+                judge_identity: pactum_core::state::RoleIdentityConfig::none(),
                 min_judge_stake: 0,
                 max_judge_stake: 0,
                 min_arbiter_stake: 500,
@@ -291,7 +290,6 @@ fn apply_as_arbiter_enforces_marketplace_kyb_credential() {
         &pactum_core::instruction::ApplyAsArbiter {
             arbiter_fee: 5_000_000,
             sla_secs: 172_800,
-            id_hash,
         }
         .data(),
         pactum_core::accounts::ApplyAsArbiter {
@@ -324,7 +322,6 @@ fn apply_as_arbiter_enforces_marketplace_kyb_credential() {
         &pactum_core::instruction::ApplyAsArbiter {
             arbiter_fee: 5_000_000,
             sla_secs: 172_800,
-            id_hash,
         }
         .data(),
         pactum_core::accounts::ApplyAsArbiter {

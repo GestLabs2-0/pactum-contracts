@@ -22,6 +22,41 @@ pub enum IntegratorPolicy {
     KybAndCommittee,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq, InitSpace)]
+pub enum IdentityPolicy {
+    None,
+    InitialKyc,
+    KycAndMarketplaceProof,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq, InitSpace)]
+pub struct RoleIdentityConfig {
+    pub policy: IdentityPolicy,
+    pub credential: Option<Pubkey>,
+}
+
+impl RoleIdentityConfig {
+    pub fn none() -> Self {
+        Self {
+            policy: IdentityPolicy::None,
+            credential: None,
+        }
+    }
+
+    pub fn validate(&self) -> Result<()> {
+        if self.policy == IdentityPolicy::KycAndMarketplaceProof {
+            let cred = self
+                .credential
+                .ok_or(crate::error::PactumCoreError::InvalidMarketplaceConfig)?;
+            require!(
+                cred != Pubkey::default(),
+                crate::error::PactumCoreError::InvalidMarketplaceConfig
+            );
+        }
+        Ok(())
+    }
+}
+
 /// Seeds: `[MARKETPLACE_SEED.as_bytes(), market_id.to_le_bytes().as_ref()]` (`["marketplace", market_id]`).
 #[account]
 #[derive(InitSpace)]
@@ -43,8 +78,12 @@ pub struct Marketplace {
     pub integrator_policy: IntegratorPolicy,
     /// Credential under which every identity will be published following SAS
     pub kyb_credential: Option<Pubkey>,
-    /// Does this market requires an identity?
-    pub requires_identity: bool,
+    /// Whether clients must hold a base Pactum-ally SAS KYC attestation
+    pub client_requires_kyc: bool,
+    /// Identity policy and optional marketplace-specific SAS credential for providers
+    pub provider_identity: RoleIdentityConfig,
+    /// Identity policy and optional marketplace-specific SAS credential for judges
+    pub judge_identity: RoleIdentityConfig,
     /// Min judge stake has the purpose to stablish a entry barrier for every judge
     pub min_judge_stake: u64,
     /// Max judge stake has the purpose to avoid 51% attacks
@@ -61,8 +100,28 @@ pub struct Marketplace {
 }
 
 impl Marketplace {
-    /// Verifies that the marketplace is active and the user satisfies ban and identity requirements.
-    pub fn assert_participant_eligible(&self, user_main: &crate::state::UserMainAcc) -> Result<()> {
+    /// Verifies that the marketplace is active and a client satisfies ban and base KYC rules.
+    pub fn assert_client_eligible(&self, user_main: &crate::state::UserMainAcc) -> Result<()> {
+        let cfg = RoleIdentityConfig {
+            policy: if self.client_requires_kyc {
+                IdentityPolicy::InitialKyc
+            } else {
+                IdentityPolicy::None
+            },
+            credential: None,
+        };
+        self.assert_role_eligible(user_main, &cfg, Pubkey::default(), None)
+    }
+
+    /// Verifies that the marketplace is active and a participant satisfies ban and role-specific
+    /// identity requirements (base KYC and/or marketplace-specific SAS credential).
+    pub fn assert_role_eligible(
+        &self,
+        user_main: &crate::state::UserMainAcc,
+        role_cfg: &RoleIdentityConfig,
+        sas_program: Pubkey,
+        marketplace_sas: Option<(&AccountInfo, &AccountInfo)>,
+    ) -> Result<()> {
         require!(
             self.is_active,
             crate::error::PactumCoreError::MarketplaceInactive
@@ -71,12 +130,34 @@ impl Marketplace {
             !user_main.is_banned,
             crate::error::PactumCoreError::UserGloballyBanned
         );
-        if self.requires_identity {
-            require!(
-                user_main.sas_attestation.is_some(),
-                crate::error::PactumCoreError::IdentityRequired
-            );
+        match role_cfg.policy {
+            IdentityPolicy::None => Ok(()),
+            IdentityPolicy::InitialKyc => {
+                require!(
+                    user_main.sas_attestation.is_some(),
+                    crate::error::PactumCoreError::IdentityRequired
+                );
+                Ok(())
+            }
+            IdentityPolicy::KycAndMarketplaceProof => {
+                require!(
+                    user_main.sas_attestation.is_some(),
+                    crate::error::PactumCoreError::IdentityRequired
+                );
+                let expected_cred = role_cfg
+                    .credential
+                    .ok_or(crate::error::PactumCoreError::InvalidMarketplaceConfig)?;
+                let (att_info, cred_info) =
+                    marketplace_sas.ok_or(crate::error::PactumCoreError::IdentityRequired)?;
+                crate::state::verify_sas_attestation(
+                    att_info,
+                    cred_info,
+                    sas_program,
+                    expected_cred,
+                    user_main.authority,
+                )?;
+                Ok(())
+            }
         }
-        Ok(())
     }
 }

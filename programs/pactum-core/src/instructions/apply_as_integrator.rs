@@ -1,16 +1,10 @@
-use anchor_lang::{
-    prelude::*,
-    system_program::{create_account, CreateAccount},
-};
+use anchor_lang::prelude::*;
 use pactum_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
-use solana_sha256_hasher::hash;
 
 use crate::{
-    constants::{IDENTITY_SEED, INTEGRATOR_APP_SEED},
+    constants::INTEGRATOR_APP_SEED,
     error::PactumCoreError,
-    state::{
-        verify_sas_attestation, Identity, IntegratorApplication, IntegratorPolicy, Marketplace,
-    },
+    state::{verify_and_anchor_identity, IntegratorApplication, IntegratorPolicy, Marketplace},
 };
 
 #[derive(Accounts)]
@@ -62,97 +56,52 @@ pub struct ApplyAsIntegrator<'info> {
 pub fn handler_apply_as_integrator(
     ctx: Context<ApplyAsIntegrator>,
     default_fee_bps: u16,
-    id_hash: Option<[u8; 32]>,
 ) -> Result<()> {
     require!(
         default_fee_bps <= 10_000,
         PactumCoreError::InvalidIntegratorParams
     );
 
-    let sas_kyb_attestation = if ctx.accounts.marketplace.integrator_policy
-        == IntegratorPolicy::KybAndCommittee
-    {
-        let id_hash = id_hash.ok_or(PactumCoreError::InvalidIntegratorParams)?;
-        let attestation_acc = ctx
-            .accounts
-            .sas_kyb_attestation
-            .as_ref()
-            .ok_or(PactumCoreError::InvalidAttestationAcc)?;
-        let credential_acc = ctx
-            .accounts
-            .sas_credential
-            .as_ref()
-            .ok_or(PactumCoreError::InvalidCredentialAcc)?;
-        let identity_acc = ctx
-            .accounts
-            .identity
-            .as_ref()
-            .ok_or(PactumCoreError::InvalidIntegratorParams)?;
+    let sas_kyb_attestation =
+        if ctx.accounts.marketplace.integrator_policy == IntegratorPolicy::KybAndCommittee {
+            let attestation_acc = ctx
+                .accounts
+                .sas_kyb_attestation
+                .as_ref()
+                .ok_or(PactumCoreError::InvalidAttestationAcc)?;
+            let credential_acc = ctx
+                .accounts
+                .sas_credential
+                .as_ref()
+                .ok_or(PactumCoreError::InvalidCredentialAcc)?;
+            let identity_acc = ctx
+                .accounts
+                .identity
+                .as_ref()
+                .ok_or(PactumCoreError::InvalidIntegratorParams)?;
 
-        let expected_credential = ctx
-            .accounts
-            .marketplace
-            .kyb_credential
-            .unwrap_or(ctx.accounts.global_config.sas_credential);
+            let expected_credential = ctx
+                .accounts
+                .marketplace
+                .kyb_credential
+                .unwrap_or(ctx.accounts.global_config.sas_credential);
 
-        let (attestation, now) = verify_sas_attestation(
-            attestation_acc,
-            credential_acc,
-            ctx.accounts.global_config.sas_program,
-            expected_credential,
-            ctx.accounts.authority.key(),
-        )?;
+            verify_and_anchor_identity(
+                &attestation_acc.to_account_info(),
+                &credential_acc.to_account_info(),
+                &identity_acc.to_account_info(),
+                &ctx.accounts.payer.to_account_info(),
+                &ctx.accounts.system_program.to_account_info(),
+                ctx.accounts.global_config.sas_program,
+                expected_credential,
+                ctx.accounts.authority.key(),
+                true,
+            )?;
 
-        require!(
-            !attestation.data.is_empty() && hash(&attestation.data).to_bytes() == id_hash,
-            PactumCoreError::InvalidAttestationData
-        );
-
-        let (expected_identity, identity_bump) =
-            Pubkey::find_program_address(&[IDENTITY_SEED.as_bytes(), id_hash.as_ref()], &crate::ID);
-        require_keys_eq!(
-            identity_acc.key(),
-            expected_identity,
-            PactumCoreError::InvalidIntegratorParams
-        );
-
-        if identity_acc.data_is_empty() {
-            let space = 8 + Identity::INIT_SPACE;
-            let lamports = Rent::get()?.minimum_balance(space);
-            let signer_seeds: &[&[&[u8]]] =
-                &[&[IDENTITY_SEED.as_bytes(), id_hash.as_ref(), &[identity_bump]]];
-            let cpi_ctx = CpiContext::new_with_signer(
-                ctx.accounts.system_program.key(),
-                CreateAccount {
-                    from: ctx.accounts.payer.to_account_info(),
-                    to: identity_acc.to_account_info(),
-                },
-                signer_seeds,
-            );
-            create_account(cpi_ctx, lamports, space as u64, &crate::ID)?;
-
-            let identity = Identity {
-                authority: ctx.accounts.authority.key(),
-                verified_at: now,
-                linked: true,
-                bump: identity_bump,
-            };
-            let mut data = identity_acc.try_borrow_mut_data()?;
-            let mut writer: &mut [u8] = &mut data;
-            identity.try_serialize(&mut writer)?;
+            Some(attestation_acc.key())
         } else {
-            let data = identity_acc.try_borrow_data()?;
-            let identity = Identity::try_deserialize(&mut &data[..])?;
-            require!(
-                identity.authority == ctx.accounts.authority.key(),
-                PactumCoreError::IdentityAlreadyClaimed
-            );
-        }
-
-        Some(attestation_acc.key())
-    } else {
-        None
-    };
+            None
+        };
 
     let app = &mut ctx.accounts.integrator_application;
     app.marketplace = ctx.accounts.marketplace.key();

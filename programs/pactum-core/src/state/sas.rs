@@ -90,3 +90,81 @@ pub fn verify_sas_attestation(
 
     Ok((attestation, now))
 }
+
+/// Verifies a SAS attestation against `expected_credential`, hashes its `data` on-chain to
+/// derive `Identity` (`["identity", sha256(data)]`), and creates or validates ownership.
+#[allow(clippy::too_many_arguments)]
+pub fn verify_and_anchor_identity<'info>(
+    sas_attestation: &AccountInfo<'info>,
+    sas_credential: &AccountInfo<'info>,
+    identity_acc: &AccountInfo<'info>,
+    payer: &AccountInfo<'info>,
+    system_program: &AccountInfo<'info>,
+    sas_program: Pubkey,
+    expected_credential: Pubkey,
+    authority: Pubkey,
+    allow_existing: bool,
+) -> Result<()> {
+    use anchor_lang::system_program::{create_account, CreateAccount};
+    use solana_sha256_hasher::hash;
+
+    use crate::{constants::IDENTITY_SEED, error::PactumCoreError, state::Identity};
+
+    let (attestation, now) = verify_sas_attestation(
+        sas_attestation,
+        sas_credential,
+        sas_program,
+        expected_credential,
+        authority,
+    )?;
+
+    require!(
+        !attestation.data.is_empty(),
+        PactumCoreError::InvalidAttestationData
+    );
+
+    let id_hash = hash(&attestation.data).to_bytes();
+    let (expected_identity, identity_bump) =
+        Pubkey::find_program_address(&[IDENTITY_SEED.as_bytes(), id_hash.as_ref()], &crate::ID);
+    require_keys_eq!(
+        identity_acc.key(),
+        expected_identity,
+        PactumCoreError::InvalidAttestationData
+    );
+
+    if identity_acc.data_is_empty() {
+        let space = 8 + Identity::INIT_SPACE;
+        let lamports = Rent::get()?.minimum_balance(space);
+        let signer_seeds: &[&[&[u8]]] =
+            &[&[IDENTITY_SEED.as_bytes(), id_hash.as_ref(), &[identity_bump]]];
+        let cpi_ctx = CpiContext::new_with_signer(
+            system_program.key(),
+            CreateAccount {
+                from: payer.clone(),
+                to: identity_acc.clone(),
+            },
+            signer_seeds,
+        );
+        create_account(cpi_ctx, lamports, space as u64, &crate::ID)?;
+
+        let identity = Identity {
+            authority,
+            verified_at: now,
+            linked: true,
+            bump: identity_bump,
+        };
+        let mut data = identity_acc.try_borrow_mut_data()?;
+        let mut writer: &mut [u8] = &mut data;
+        identity.try_serialize(&mut writer)?;
+    } else {
+        require!(allow_existing, PactumCoreError::IdentityAlreadyClaimed);
+        let data = identity_acc.try_borrow_data()?;
+        let identity = Identity::try_deserialize(&mut &data[..])?;
+        require!(
+            identity.authority == authority,
+            PactumCoreError::IdentityAlreadyClaimed
+        );
+    }
+
+    Ok(())
+}

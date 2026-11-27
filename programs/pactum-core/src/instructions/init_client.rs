@@ -37,7 +37,7 @@ pub struct InitClient<'info> {
 pub fn handler_init_client(ctx: Context<InitClient>) -> Result<()> {
     ctx.accounts
         .marketplace
-        .assert_participant_eligible(&ctx.accounts.user_main)?;
+        .assert_client_eligible(&ctx.accounts.user_main)?;
 
     let client = &mut ctx.accounts.client;
     client.marketplace = ctx.accounts.marketplace.key();

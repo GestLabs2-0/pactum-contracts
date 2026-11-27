@@ -71,7 +71,6 @@ fn setup_application(
         &pactum_core::instruction::ApplyAsArbiter {
             arbiter_fee: 5_000_000,
             sla_secs: 172_800,
-            id_hash,
         }
         .data(),
         pactum_core::accounts::ApplyAsArbiter {

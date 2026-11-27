@@ -1,15 +1,13 @@
 use anchor_lang::prelude::*;
 use pactum_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
-use solana_sha256_hasher::hash;
 
 use crate::{
-    constants::{ARBITER_APP_SEED, IDENTITY_SEED},
+    constants::ARBITER_APP_SEED,
     error::PactumCoreError,
-    state::{verify_sas_attestation, ArbiterApplication, Identity, Marketplace},
+    state::{verify_and_anchor_identity, ArbiterApplication, Marketplace},
 };
 
 #[derive(Accounts)]
-#[instruction(arbiter_fee: u64, sla_secs: i64, id_hash: [u8; 32])]
 pub struct ApplyAsArbiter<'info> {
     #[account(
         init,
@@ -20,14 +18,9 @@ pub struct ApplyAsArbiter<'info> {
     )]
     pub arbiter_application: Account<'info, ArbiterApplication>,
 
-    #[account(
-        init_if_needed,
-        payer = payer,
-        space = 8 + Identity::INIT_SPACE,
-        seeds = [IDENTITY_SEED.as_bytes(), id_hash.as_ref()],
-        bump,
-    )]
-    pub identity: Account<'info, Identity>,
+    /// CHECK: Verified and created in `verify_and_anchor_identity` from `sha256(attestation.data)`.
+    #[account(mut)]
+    pub identity: UncheckedAccount<'info>,
 
     #[account(constraint = marketplace.is_active @ PactumCoreError::MarketplaceInactive)]
     pub marketplace: Account<'info, Marketplace>,
@@ -39,10 +32,10 @@ pub struct ApplyAsArbiter<'info> {
     )]
     pub global_config: Account<'info, GlobalConfig>,
 
-    /// CHECK: Verified by `verify_sas_attestation` against `global_config.sas_program`.
+    /// CHECK: Verified by `verify_and_anchor_identity` against `global_config.sas_program`.
     pub sas_kyb_attestation: UncheckedAccount<'info>,
 
-    /// CHECK: Verified by `verify_sas_attestation` against `marketplace.kyb_credential` (or `global_config.sas_credential`).
+    /// CHECK: Verified by `verify_and_anchor_identity` against `marketplace.kyb_credential` (or `global_config.sas_credential`).
     pub sas_credential: UncheckedAccount<'info>,
 
     pub authority: Signer<'info>,
@@ -57,7 +50,6 @@ pub fn handler_apply_as_arbiter(
     ctx: Context<ApplyAsArbiter>,
     arbiter_fee: u64,
     sla_secs: i64,
-    id_hash: [u8; 32],
 ) -> Result<()> {
     require!(sla_secs > 0, PactumCoreError::InvalidArbiterParams);
 
@@ -67,31 +59,17 @@ pub fn handler_apply_as_arbiter(
         .kyb_credential
         .unwrap_or(ctx.accounts.global_config.sas_credential);
 
-    let (attestation, now) = verify_sas_attestation(
-        &ctx.accounts.sas_kyb_attestation,
-        &ctx.accounts.sas_credential,
+    verify_and_anchor_identity(
+        &ctx.accounts.sas_kyb_attestation.to_account_info(),
+        &ctx.accounts.sas_credential.to_account_info(),
+        &ctx.accounts.identity.to_account_info(),
+        &ctx.accounts.payer.to_account_info(),
+        &ctx.accounts.system_program.to_account_info(),
         ctx.accounts.global_config.sas_program,
         expected_credential,
         ctx.accounts.authority.key(),
+        true,
     )?;
-
-    require!(
-        !attestation.data.is_empty() && hash(&attestation.data).to_bytes() == id_hash,
-        PactumCoreError::InvalidAttestationData
-    );
-
-    let identity = &mut ctx.accounts.identity;
-    if identity.linked {
-        require!(
-            identity.authority == ctx.accounts.authority.key(),
-            PactumCoreError::IdentityAlreadyClaimed
-        );
-    } else {
-        identity.authority = ctx.accounts.authority.key();
-        identity.verified_at = now;
-        identity.linked = true;
-        identity.bump = ctx.bumps.identity;
-    }
 
     let app = &mut ctx.accounts.arbiter_application;
     app.marketplace = ctx.accounts.marketplace.key();
