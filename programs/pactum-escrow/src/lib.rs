@@ -52,4 +52,11 @@ pub mod pactum_escrow {
     ) -> Result<()> {
         handler_propose_agreement(ctx, params)
     }
+
+    pub fn fund_agreement(
+        ctx: Context<FundAgreement>,
+        expected_contract_hash: Option<[u8; 32]>,
+    ) -> Result<()> {
+        handler_fund_agreement(ctx, expected_contract_hash)
+    }
 }
