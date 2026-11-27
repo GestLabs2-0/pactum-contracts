@@ -130,4 +130,8 @@ pub mod pactum_escrow {
     pub fn reservation_completes(ctx: Context<ReservationCompletes>) -> Result<()> {
         handler_reservation_completes(ctx)
     }
+
+    pub fn release_reservation_funds(ctx: Context<ReleaseReservationFunds>) -> Result<()> {
+        handler_release_reservation_funds(ctx)
+    }
 }
