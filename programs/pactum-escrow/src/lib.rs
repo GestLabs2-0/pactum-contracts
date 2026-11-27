@@ -126,4 +126,8 @@ pub mod pactum_escrow {
     pub fn reservation_starts(ctx: Context<ReservationStarts>) -> Result<()> {
         handler_reservation_starts(ctx)
     }
+
+    pub fn reservation_completes(ctx: Context<ReservationCompletes>) -> Result<()> {
+        handler_reservation_completes(ctx)
+    }
 }
