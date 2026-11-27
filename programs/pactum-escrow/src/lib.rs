@@ -23,4 +23,11 @@ pub mod pactum_escrow {
     pub fn initialize_escrow(ctx: Context<InitializeEscrow>) -> Result<()> {
         handler_initialize_escrow(ctx)
     }
+
+    pub fn create_fixed_agreement(
+        ctx: Context<CreateFixedAgreement>,
+        params: CreateFixedAgreementParams,
+    ) -> Result<()> {
+        handler_create_fixed_agreement(ctx, params)
+    }
 }

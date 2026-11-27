@@ -9,6 +9,24 @@ use crate::{
     error::PactumEscrowError,
     state::BookingDays,
 };
+use pactum_core::state::IntegratorProfile;
+
+/// Validates an optional `IntegratorProfile` against `marketplace` and returns `(key, fee_bps)`.
+pub fn resolve_integrator(
+    integrator: &Option<Box<Account<'_, IntegratorProfile>>>,
+    marketplace: Pubkey,
+) -> Result<(Option<Pubkey>, u16)> {
+    match integrator {
+        Some(profile) => {
+            require!(
+                profile.marketplace == marketplace && profile.is_active && !profile.is_banned,
+                PactumEscrowError::InvalidIntegratorAccount
+            );
+            Ok((Some(profile.key()), profile.default_fee_bps))
+        }
+        None => Ok((None, 0)),
+    }
+}
 
 /// Computed fee and payout distribution for an escrow release.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
