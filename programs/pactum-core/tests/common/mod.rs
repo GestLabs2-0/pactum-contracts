@@ -194,7 +194,9 @@ pub fn create_marketplace_account(
                 storage_backend: StorageBackend::Arweave,
                 integrator_policy: pactum_core::state::IntegratorPolicy::Permissionless,
                 kyb_credential: None,
-                requires_identity,
+                client_requires_kyc: requires_identity,
+                provider_identity: pactum_core::state::RoleIdentityConfig::none(),
+                judge_identity: pactum_core::state::RoleIdentityConfig::none(),
                 min_judge_stake: 100,
                 max_judge_stake: 1000,
                 min_arbiter_stake: 500,
@@ -229,6 +231,8 @@ pub fn create_provider_account(
         ],
         &core_id,
     );
+    let (global_config_pda, _) =
+        Pubkey::find_program_address(&[GLOBAL_CONFIG_SEED.as_bytes()], &pactum_config::id());
     let ix = Instruction::new_with_bytes(
         core_id,
         &pactum_core::instruction::InitProvider {}.data(),
@@ -236,6 +240,9 @@ pub fn create_provider_account(
             provider: provider_pda,
             marketplace: market_pda,
             user_main: user_main_pda,
+            global_config: global_config_pda,
+            marketplace_attestation: None,
+            marketplace_credential: None,
             authority: authority.pubkey(),
             payer: payer.pubkey(),
             system_program: system_program::id(),

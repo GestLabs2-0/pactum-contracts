@@ -58,13 +58,15 @@ flowchart TD
 | `CoreConfig` | `["core_config"]` | `authority`, `global_config`, `bump` |
 | `UserMainAcc` | `["user_main", authority]` | `authority`, `sas_attestation: Option<Pubkey>`, `is_banned`, `bump` |
 | `Identity` | `["identity", id_hash]` | `authority`, `verified_at`, `linked`, `bump` *(ancla de unicidad anti-Sybil por hash KYC/KYB)* |
-| `Marketplace` | `["marketplace", market_id]` | `market_id`, `committee`, `dispute_mode`, `storage_backend`, `kyb_credential`, `requires_identity`, `min_judge_stake`, `max_judge_stake`, `min_arbiter_stake`, `min_jury_fee`, `pool_count`, `is_active`, `bump` |
+| `Marketplace` | `["marketplace", market_id]` | `market_id`, `name`, `committee`, `dispute_mode`, `storage_backend`, `integrator_policy`, `kyb_credential`, `client_requires_kyc`, `provider_identity`, `judge_identity`, `min_judge_stake`, `max_judge_stake`, `min_arbiter_stake`, `min_jury_fee`, `pool_count`, `is_active`, `bump` |
 | `Client` | `["client", marketplace, user_main]` | `marketplace`, `user_main`, `is_banned`, `completed_agreements`, `cancelled_agreements`, `disputes_won`, `disputes_lost`, `total_reviews`, `total_score`, `bump` |
 | `Provider` | `["provider", marketplace, user_main]` | `marketplace`, `user_main`, `is_banned`, `offer_count`, `completed_agreements`, `cancelled_agreements`, `disputes_won`, `disputes_lost`, `total_reviews`, `total_score`, `bump` |
 | `Judge` | `["judge", marketplace, user_main]` | `marketplace`, `user_main`, `staked_amount`, `pool_id`, `leaf_index`, `is_active_in_pool`, `active_disputes`, `cases_voted`, `cases_in_consensus`, `is_banned`, `bump` |
 | `Offer` | `["offer", provider, offer_id]` | `offer_id`, `base_price`, `pricing_type`, `approval_window_secs`, `provider_bond`, `required_client_bond`, `jury_fee`, `default_arbiter`, `content_ref`, `state_hash`, `is_active`, `rent_payer`, `bump` |
 | `ArbiterApplication` | `["arbiter_app", marketplace, authority]` | `marketplace`, `authority`, `sas_kyb_attestation`, `arbiter_fee`, `sla_secs`, `rent_payer`, `bump` |
 | `ArbiterProfile` | `["arbiter", marketplace, authority]` | `marketplace`, `authority`, `sas_kyb_attestation`, `arbiter_fee`, `staked_amount`, `sla_secs`, `active_disputes`, `cases_resolved`, `is_active`, `bump` |
+| `IntegratorApplication` | `["integrator_app", marketplace, authority]` | `marketplace`, `authority`, `sas_kyb_attestation`, `default_fee_bps`, `rent_payer`, `bump` |
+| `IntegratorProfile` | `["integrator", marketplace, authority]` | `marketplace`, `authority`, `sas_kyb_attestation`, `default_fee_bps`, `fallback_resolutions`, `is_active`, `is_banned`, `bump` |
 
 *(Nota: `Provider` ya no guarda `deposited_bond` global; el bond opcional vive aislado por `Agreement` en escrow.)*
 
@@ -89,6 +91,10 @@ flowchart TD
 | **Árbitros B2B** | `apply_as_arbiter(arbiter_fee, sla_secs, id_hash)` | `authority`, `payer` | Valida *attestation* KYB contra `marketplace.kyb_credential` (o `global_config.sas_credential`), ancla `Identity(id_hash)` con `init_if_needed` (permite misma wallet en varios mercados) y crea `ArbiterApplication` |
 | | `review_arbiter_application(approve)` | `marketplace.committee` | Aprueba (crea `ArbiterProfile`) o rechaza la solicitud; en ambos casos cierra `ArbiterApplication` devolviendo la renta a `rent_payer` |
 | | `revoke_arbiter` | `marketplace.committee` | Desactiva un `ArbiterProfile` (`is_active = false`) en el mercado |
+| **Integradores** | `init_integrator(default_fee_bps)` | `authority`, `payer` | Crea `IntegratorProfile` directamente en mercados con `IntegratorPolicy::Permissionless` |
+| | `apply_as_integrator(default_fee_bps, id_hash)` | `authority`, `payer` | Crea `IntegratorApplication` en mercados `CommitteeApproval` / `KybAndCommittee` (valida SAS KYB + `Identity` si aplica) |
+| | `review_integrator_application(approve)` | `marketplace.committee` | Aprueba (crea `IntegratorProfile`) o rechaza la solicitud y cierra `IntegratorApplication` → `rent_payer` |
+| | `revoke_integrator` | `marketplace.committee` | Desactiva un `IntegratorProfile` (`is_active = false`) en el mercado |
 
 ### Mutadores CPI privilegiados (`instructions/cpi/`)
 

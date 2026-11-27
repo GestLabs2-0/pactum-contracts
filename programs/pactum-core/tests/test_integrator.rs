@@ -41,7 +41,9 @@ fn create_market_with_policy(
                 storage_backend: StorageBackend::Arweave,
                 integrator_policy,
                 kyb_credential: None,
-                requires_identity: false,
+                client_requires_kyc: false,
+                provider_identity: pactum_core::state::RoleIdentityConfig::none(),
+                judge_identity: pactum_core::state::RoleIdentityConfig::none(),
                 min_judge_stake: 100,
                 max_judge_stake: 1000,
                 min_arbiter_stake: 500,
@@ -186,7 +188,6 @@ fn apply_review_and_revoke_integrator_in_committee_market() {
         pactum_core::id(),
         &pactum_core::instruction::ApplyAsIntegrator {
             default_fee_bps: 75,
-            id_hash: None,
         }
         .data(),
         pactum_core::accounts::ApplyAsIntegrator {

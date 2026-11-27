@@ -4,7 +4,7 @@ use crate::{
     constants::{MARKETPLACE_SEED, MAX_MARKETPLACE_NAME_LEN},
     error::PactumCoreError,
     events::MarketplaceUpdated,
-    state::{IntegratorPolicy, Marketplace},
+    state::{IntegratorPolicy, Marketplace, RoleIdentityConfig},
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
@@ -16,6 +16,9 @@ pub struct UpdateMarketplaceParams {
     pub min_jury_fee: Option<u64>,
     pub integrator_policy: Option<IntegratorPolicy>,
     pub kyb_credential: Option<Option<Pubkey>>,
+    pub client_requires_kyc: Option<bool>,
+    pub provider_identity: Option<RoleIdentityConfig>,
+    pub judge_identity: Option<RoleIdentityConfig>,
     pub is_active: Option<bool>,
 }
 
@@ -69,6 +72,17 @@ pub fn handler_update_marketplace(
     }
     if let Some(kyb_credential) = params.kyb_credential {
         marketplace.kyb_credential = kyb_credential;
+    }
+    if let Some(client_requires_kyc) = params.client_requires_kyc {
+        marketplace.client_requires_kyc = client_requires_kyc;
+    }
+    if let Some(provider_identity) = params.provider_identity {
+        provider_identity.validate()?;
+        marketplace.provider_identity = provider_identity;
+    }
+    if let Some(judge_identity) = params.judge_identity {
+        judge_identity.validate()?;
+        marketplace.judge_identity = judge_identity;
     }
 
     if let Some(is_active) = params.is_active {

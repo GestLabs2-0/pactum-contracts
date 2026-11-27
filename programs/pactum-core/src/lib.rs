@@ -30,8 +30,8 @@ pub mod pactum_core {
         handler_init_user_main(ctx)
     }
 
-    pub fn link_sas_identity(ctx: Context<LinkSasIdentity>, id_hash: [u8; 32]) -> Result<()> {
-        handler_link_sas_identity(ctx, id_hash)
+    pub fn link_sas_identity(ctx: Context<LinkSasIdentity>) -> Result<()> {
+        handler_link_sas_identity(ctx)
     }
 
     pub fn unlink_sas_identity(ctx: Context<UnlinkSasIdentity>) -> Result<()> {
@@ -101,9 +101,8 @@ pub mod pactum_core {
         ctx: Context<ApplyAsArbiter>,
         arbiter_fee: u64,
         sla_secs: i64,
-        id_hash: [u8; 32],
     ) -> Result<()> {
-        handler_apply_as_arbiter(ctx, arbiter_fee, sla_secs, id_hash)
+        handler_apply_as_arbiter(ctx, arbiter_fee, sla_secs)
     }
 
     pub fn review_arbiter_application(
@@ -128,9 +127,8 @@ pub mod pactum_core {
     pub fn apply_as_integrator(
         ctx: Context<ApplyAsIntegrator>,
         default_fee_bps: u16,
-        id_hash: Option<[u8; 32]>,
     ) -> Result<()> {
-        handler_apply_as_integrator(ctx, default_fee_bps, id_hash)
+        handler_apply_as_integrator(ctx, default_fee_bps)
     }
 
     pub fn review_integrator_application(

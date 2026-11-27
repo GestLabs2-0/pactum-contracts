@@ -30,6 +30,6 @@ fn create_marketplace_initializes_permissionlessly() {
     assert_eq!(market.committee, committee.pubkey());
     assert_eq!(market.dispute_mode, DisputeMode::Hybrid);
     assert_eq!(market.storage_backend, StorageBackend::Arweave);
-    assert!(!market.requires_identity);
+    assert!(!market.client_requires_kyc);
     assert!(market.is_active);
 }

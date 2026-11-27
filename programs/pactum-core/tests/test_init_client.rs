@@ -126,7 +126,7 @@ fn init_client_succeeds_after_linking_sas() {
     );
     let link_ix = Instruction::new_with_bytes(
         pactum_core::id(),
-        &pactum_core::instruction::LinkSasIdentity { id_hash }.data(),
+        &pactum_core::instruction::LinkSasIdentity {}.data(),
         pactum_core::accounts::LinkSasIdentity {
             user_main: user_main_pda,
             identity: identity_pda,

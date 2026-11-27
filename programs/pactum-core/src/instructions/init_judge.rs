@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use pactum_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
 
 use crate::{
     constants::{JUDGE_SEED, USER_MAIN_SEED},
@@ -26,6 +27,19 @@ pub struct InitJudge<'info> {
     )]
     pub user_main: Account<'info, UserMainAcc>,
 
+    #[account(
+        seeds = [GLOBAL_CONFIG_SEED.as_bytes()],
+        bump = global_config.bump,
+        seeds::program = pactum_config::ID,
+    )]
+    pub global_config: Account<'info, GlobalConfig>,
+
+    /// CHECK: Optional SAS attestation verified when `judge_identity.policy == KycAndMarketplaceProof`.
+    pub marketplace_attestation: Option<UncheckedAccount<'info>>,
+
+    /// CHECK: Optional SAS credential verified when `judge_identity.policy == KycAndMarketplaceProof`.
+    pub marketplace_credential: Option<UncheckedAccount<'info>>,
+
     pub authority: Signer<'info>,
 
     #[account(mut)]
@@ -35,9 +49,19 @@ pub struct InitJudge<'info> {
 }
 
 pub fn handler_init_judge(ctx: Context<InitJudge>) -> Result<()> {
-    ctx.accounts
-        .marketplace
-        .assert_participant_eligible(&ctx.accounts.user_main)?;
+    let marketplace_sas = ctx
+        .accounts
+        .marketplace_attestation
+        .as_ref()
+        .zip(ctx.accounts.marketplace_credential.as_ref())
+        .map(|(a, c)| (a.as_ref(), c.as_ref()));
+
+    ctx.accounts.marketplace.assert_role_eligible(
+        &ctx.accounts.user_main,
+        &ctx.accounts.marketplace.judge_identity,
+        ctx.accounts.global_config.sas_program,
+        marketplace_sas,
+    )?;
     require!(
         ctx.accounts.marketplace.dispute_mode != DisputeMode::ArbiterOnly,
         PactumCoreError::JuryNotEnabled

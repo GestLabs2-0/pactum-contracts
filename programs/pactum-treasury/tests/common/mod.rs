@@ -11,8 +11,8 @@ use {
     pactum_core::{
         constants::{ARBITER_SEED, JUDGE_SEED, MARKETPLACE_SEED, USER_MAIN_SEED},
         state::{
-            ArbiterProfile, DisputeMode, IntegratorPolicy, Judge, Marketplace, StorageBackend,
-            UserMainAcc,
+            ArbiterProfile, DisputeMode, IntegratorPolicy, Judge, Marketplace, RoleIdentityConfig,
+            StorageBackend, UserMainAcc,
         },
     },
     pactum_treasury::constants::{ARBITER_VAULT_SEED, JUDGE_VAULT_SEED, TREASURY_CONFIG_SEED},
@@ -214,7 +214,9 @@ pub fn seed_marketplace(
         storage_backend: StorageBackend::Arweave,
         integrator_policy: IntegratorPolicy::Permissionless,
         kyb_credential: None,
-        requires_identity: false,
+        client_requires_kyc: false,
+        provider_identity: RoleIdentityConfig::none(),
+        judge_identity: RoleIdentityConfig::none(),
         min_judge_stake,
         max_judge_stake,
         min_arbiter_stake,

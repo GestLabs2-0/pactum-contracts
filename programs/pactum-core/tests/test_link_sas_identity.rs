@@ -44,7 +44,7 @@ fn link_sas_identity_succeeds_and_creates_identity() {
 
     let ix = Instruction::new_with_bytes(
         pactum_core::id(),
-        &pactum_core::instruction::LinkSasIdentity { id_hash }.data(),
+        &pactum_core::instruction::LinkSasIdentity {}.data(),
         pactum_core::accounts::LinkSasIdentity {
             user_main: user_main_pda,
             identity: identity_pda,
@@ -99,7 +99,7 @@ fn link_sas_identity_rejects_duplicate_id_hash_on_second_wallet() {
     );
     let ix_a = Instruction::new_with_bytes(
         pactum_core::id(),
-        &pactum_core::instruction::LinkSasIdentity { id_hash }.data(),
+        &pactum_core::instruction::LinkSasIdentity {}.data(),
         pactum_core::accounts::LinkSasIdentity {
             user_main: um_a,
             identity: identity_pda,
@@ -126,7 +126,7 @@ fn link_sas_identity_rejects_duplicate_id_hash_on_second_wallet() {
     );
     let ix_b = Instruction::new_with_bytes(
         pactum_core::id(),
-        &pactum_core::instruction::LinkSasIdentity { id_hash }.data(),
+        &pactum_core::instruction::LinkSasIdentity {}.data(),
         pactum_core::accounts::LinkSasIdentity {
             user_main: um_b,
             identity: identity_pda,
@@ -172,7 +172,7 @@ fn link_sas_identity_rejects_wrong_program_owner() {
 
     let ix = Instruction::new_with_bytes(
         pactum_core::id(),
-        &pactum_core::instruction::LinkSasIdentity { id_hash }.data(),
+        &pactum_core::instruction::LinkSasIdentity {}.data(),
         pactum_core::accounts::LinkSasIdentity {
             user_main: user_main_pda,
             identity: identity_pda,
@@ -215,7 +215,7 @@ fn link_sas_identity_rejects_expired_attestation() {
 
     let ix = Instruction::new_with_bytes(
         pactum_core::id(),
-        &pactum_core::instruction::LinkSasIdentity { id_hash }.data(),
+        &pactum_core::instruction::LinkSasIdentity {}.data(),
         pactum_core::accounts::LinkSasIdentity {
             user_main: user_main_pda,
             identity: identity_pda,
@@ -279,7 +279,7 @@ fn link_sas_identity_rejects_unauthorized_signer() {
 
     let ix = Instruction::new_with_bytes(
         pactum_core::id(),
-        &pactum_core::instruction::LinkSasIdentity { id_hash }.data(),
+        &pactum_core::instruction::LinkSasIdentity {}.data(),
         pactum_core::accounts::LinkSasIdentity {
             user_main: user_main_pda,
             identity: identity_pda,

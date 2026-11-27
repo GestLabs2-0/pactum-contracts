@@ -23,6 +23,9 @@ fn default_update_params() -> UpdateMarketplaceParams {
         min_jury_fee: None,
         integrator_policy: None,
         kyb_credential: None,
+        client_requires_kyc: None,
+        provider_identity: None,
+        judge_identity: None,
         is_active: None,
     }
 }
