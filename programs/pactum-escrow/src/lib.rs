@@ -154,4 +154,8 @@ pub mod pactum_escrow {
     ) -> Result<()> {
         handler_provider_cancel_reservation_cross_year(ctx)
     }
+
+    pub fn review_counterparty(ctx: Context<ReviewCounterparty>, rating: u8) -> Result<()> {
+        handler_review_counterparty(ctx, rating)
+    }
 }
