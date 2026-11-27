@@ -104,4 +104,8 @@ pub mod pactum_escrow {
     pub fn provider_accept_reservation(ctx: Context<ProviderAcceptReservation>) -> Result<()> {
         handler_provider_accept_reservation(ctx)
     }
+
+    pub fn provider_reject_reservation(ctx: Context<ProviderRejectReservation>) -> Result<()> {
+        handler_provider_reject_reservation(ctx)
+    }
 }
