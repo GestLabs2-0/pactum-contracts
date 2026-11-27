@@ -82,4 +82,8 @@ pub mod pactum_escrow {
     pub fn claim_milestone(ctx: Context<ClaimMilestone>) -> Result<()> {
         handler_claim_milestone(ctx)
     }
+
+    pub fn cancel_agreement(ctx: Context<CancelAgreement>) -> Result<()> {
+        handler_cancel_agreement(ctx)
+    }
 }
