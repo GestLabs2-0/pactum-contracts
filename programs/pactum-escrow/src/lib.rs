@@ -170,4 +170,11 @@ pub mod pactum_escrow {
     pub fn cpi_freeze_agreement(ctx: Context<CpiFreezeAgreement>) -> Result<()> {
         handler_cpi_freeze_agreement(ctx)
     }
+
+    pub fn cpi_settle_disputed_agreement(
+        ctx: Context<CpiSettleDisputedAgreement>,
+        params: SettleDisputedParams,
+    ) -> Result<()> {
+        handler_cpi_settle_disputed_agreement(ctx, params)
+    }
 }
