@@ -158,4 +158,8 @@ pub mod pactum_escrow {
     pub fn review_counterparty(ctx: Context<ReviewCounterparty>, rating: u8) -> Result<()> {
         handler_review_counterparty(ctx, rating)
     }
+
+    pub fn close_agreement(ctx: Context<CloseAgreement>) -> Result<()> {
+        handler_close_agreement(ctx)
+    }
 }
