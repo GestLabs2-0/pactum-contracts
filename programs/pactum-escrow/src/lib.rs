@@ -30,4 +30,11 @@ pub mod pactum_escrow {
     ) -> Result<()> {
         handler_create_fixed_agreement(ctx, params)
     }
+
+    pub fn provider_accept_agreement(
+        ctx: Context<ProviderAcceptAgreement>,
+        expected_contract_hash: Option<[u8; 32]>,
+    ) -> Result<()> {
+        handler_provider_accept_agreement(ctx, expected_contract_hash)
+    }
 }
