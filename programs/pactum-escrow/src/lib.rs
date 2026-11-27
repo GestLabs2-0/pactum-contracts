@@ -134,4 +134,8 @@ pub mod pactum_escrow {
     pub fn release_reservation_funds(ctx: Context<ReleaseReservationFunds>) -> Result<()> {
         handler_release_reservation_funds(ctx)
     }
+
+    pub fn client_cancel_reservation(ctx: Context<ClientCancelReservation>) -> Result<()> {
+        handler_client_cancel_reservation(ctx)
+    }
 }
