@@ -253,7 +253,6 @@ pub fn seed_judge(
     let um = UserMainAcc {
         authority: *authority,
         sas_attestation: None,
-        is_banned: false,
         bump: um_bump,
     };
     svm.set_account(

@@ -8,7 +8,7 @@ use {
 };
 
 #[test]
-fn init_user_main_creates_unbanned_account() {
+fn init_user_main_creates_account() {
     let admin = Keypair::new();
     let user = Keypair::new();
     let payer = Keypair::new();
@@ -21,5 +21,4 @@ fn init_user_main_creates_unbanned_account() {
 
     assert_eq!(user_main.authority, user.pubkey());
     assert_eq!(user_main.sas_attestation, None);
-    assert!(!user_main.is_banned);
 }

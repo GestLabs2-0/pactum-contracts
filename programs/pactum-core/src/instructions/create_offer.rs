@@ -52,7 +52,6 @@ pub struct CreateOffer<'info> {
         seeds = [USER_MAIN_SEED.as_bytes(), authority.key().as_ref()],
         bump = user_main.bump,
         has_one = authority @ PactumCoreError::Unauthorized,
-        constraint = !user_main.is_banned @ PactumCoreError::UserGloballyBanned,
     )]
     pub user_main: Account<'info, UserMainAcc>,
 

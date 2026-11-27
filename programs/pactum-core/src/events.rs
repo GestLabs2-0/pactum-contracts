@@ -16,13 +16,6 @@ pub struct MarketplaceUpdated {
 }
 
 #[event]
-pub struct GlobalBanUpdated {
-    pub user_main: Pubkey,
-    pub authority: Pubkey,
-    pub is_banned: bool,
-}
-
-#[event]
 pub struct LocalBanUpdated {
     pub marketplace: Pubkey,
     pub user_main: Pubkey,

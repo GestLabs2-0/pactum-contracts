@@ -6,7 +6,6 @@ use anchor_lang::prelude::*;
 pub struct UserMainAcc {
     pub authority: Pubkey,
     pub sas_attestation: Option<Pubkey>,
-    pub is_banned: bool,
     pub bump: u8,
 }
 

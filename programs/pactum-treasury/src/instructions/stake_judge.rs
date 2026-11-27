@@ -26,7 +26,6 @@ pub struct StakeJudge<'info> {
         bump = user_main.bump,
         seeds::program = pactum_core::ID,
         has_one = authority @ PactumTreasuryError::Unauthorized,
-        constraint = !user_main.is_banned @ PactumTreasuryError::UserGloballyBanned,
     )]
     pub user_main: Box<Account<'info, UserMainAcc>>,
 

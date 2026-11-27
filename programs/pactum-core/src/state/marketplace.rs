@@ -128,10 +128,6 @@ impl Marketplace {
             self.is_active,
             crate::error::PactumCoreError::MarketplaceInactive
         );
-        require!(
-            !user_main.is_banned,
-            crate::error::PactumCoreError::UserGloballyBanned
-        );
         match role_cfg.policy {
             IdentityPolicy::None => Ok(()),
             IdentityPolicy::InitialKyc => {

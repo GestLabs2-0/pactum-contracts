@@ -5,9 +5,6 @@ pub enum PactumCoreError {
     #[msg("Unauthorized: caller does not have permission to perform this action")]
     Unauthorized,
 
-    #[msg("User is globally banned")]
-    UserGloballyBanned,
-
     #[msg("Participant is locally banned in this marketplace")]
     ParticipantLocallyBanned,
 

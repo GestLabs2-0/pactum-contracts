@@ -243,7 +243,6 @@ pub fn seed_user_main(svm: &mut LiteSVM, authority: &Pubkey) -> Pubkey {
     let user_main = UserMainAcc {
         authority: *authority,
         sas_attestation: None,
-        is_banned: false,
         bump,
     };
     svm.set_account(

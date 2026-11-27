@@ -65,10 +65,6 @@ pub mod pactum_core {
         handler_init_judge(ctx)
     }
 
-    pub fn set_global_ban(ctx: Context<SetGlobalBan>, banned: bool) -> Result<()> {
-        handler_set_global_ban(ctx, banned)
-    }
-
     pub fn set_local_ban(
         ctx: Context<SetLocalBan>,
         role: ParticipantRole,

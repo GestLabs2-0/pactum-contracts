@@ -19,9 +19,8 @@
 ```mermaid
 flowchart TD
     Admin["Admin global"] -->|initialize_core_config| CoreCfg["CoreConfig"]
-    Admin -->|set_global_ban| UserMain["UserMainAcc"]
 
-    User["Usuario"] -->|init_user_main| UserMain
+    User["Usuario"] -->|init_user_main| UserMain["UserMainAcc"]
     User -->|link_sas_identity| SasCheck["verify_sas_attestation + sha256"]
     SasCheck -->|crea ancla unica| Identity["Identity (id_hash)"]
     SasCheck -->|asocia| UserMain
@@ -56,7 +55,7 @@ flowchart TD
 | Cuenta | Seeds | Campos clave |
 |--------|-------|--------------|
 | `CoreConfig` | `["core_config"]` | `authority`, `global_config`, `bump` |
-| `UserMainAcc` | `["user_main", authority]` | `authority`, `sas_attestation: Option<Pubkey>`, `is_banned`, `bump` |
+| `UserMainAcc` | `["user_main", authority]` | `authority`, `sas_attestation: Option<Pubkey>`, `bump` |
 | `Identity` | `["identity", id_hash]` | `authority`, `verified_at`, `linked`, `bump` *(ancla de unicidad anti-Sybil por hash KYC/KYB)* |
 | `Marketplace` | `["marketplace", market_id]` | `market_id`, `name`, `committee`, `dispute_mode`, `storage_backend`, `integrator_policy`, `kyb_credential`, `client_requires_kyc`, `provider_identity`, `judge_identity`, `min_judge_stake`, `max_judge_stake`, `min_arbiter_stake`, `min_jury_fee`, `pool_count`, `is_active`, `bump` |
 | `Client` | `["client", marketplace, user_main]` | `marketplace`, `user_main`, `is_banned`, `completed_agreements`, `cancelled_agreements`, `disputes_won`, `disputes_lost`, `total_reviews`, `total_score`, `bump` |
@@ -78,11 +77,10 @@ flowchart TD
 | | `init_user_main` | `authority`, `payer` | Crea la cuenta raíz `UserMainAcc` del usuario (sin identidad aún) |
 | | `link_sas_identity(id_hash)` | `authority`, `payer` | Verifica *attestation* + `Credential` SAS, comprueba `sha256(attestation.data) == id_hash`, crea `Identity(id_hash)` anti-Sybil y la enlaza a `UserMainAcc` |
 | | `unlink_sas_identity` | `authority` | Desvincula `sas_attestation` solo si fue cerrada o expiró en SAS, conservando `Identity(id_hash)` para evitar re-registro en otra wallet |
-| | `set_global_ban(banned)` | `global_config.authority` | Banea o desbanea globalmente a un usuario (`UserMainAcc.is_banned`) en todo el protocolo |
 | **Mercados / Roles** | `create_marketplace(market_id, params)` | `payer` *(permissionless)* | Crea un `Marketplace` sin dueño con su `committee`, `dispute_mode`, `storage_backend`, `kyb_credential` opcional y mínimos de *stake*/*fee* |
 | | `update_marketplace(params)` | `marketplace.committee` | Permite al comité (o gobernanza DAO futura) ajustar límites de *stake* (`min/max_judge_stake`, `min_arbiter_stake`), `min_jury_fee`, `kyb_credential`, `requires_identity`, `is_active` o rotar `committee` |
-| | `init_client` | `authority`, `payer` | Registra el perfil `Client` en un `Marketplace` (exige no estar baneado y SAS si `requires_identity == true`) |
-| | `init_provider` | `authority`, `payer` | Registra el perfil `Provider` en un `Marketplace` para publicar ofertas (exige no estar baneado y SAS si `requires_identity == true`) |
+| | `init_client` | `authority`, `payer` | Registra el perfil `Client` en un `Marketplace` (exige mercado activo y SAS si `client_requires_kyc == true`) |
+| | `init_provider` | `authority`, `payer` | Registra el perfil `Provider` en un `Marketplace` para publicar ofertas (exige mercado activo y SAS si `provider_identity` lo requiere) |
 | | `init_judge` | `authority`, `payer` | Registra el perfil `Judge` para jurados en un `Marketplace` (rechaza mercados `ArbiterOnly`) |
 | | `set_local_ban(role, banned)` | `marketplace.committee` | Veta o rehabilita localmente un `Client`, `Provider` o `Judge` dentro de un `Marketplace` |
 | **Ofertas** | `create_offer(params)` | `authority`, `payer` | Publica una `Offer` reutilizable (fija `offer_id`, incrementa `provider.offer_count` y guarda `rent_payer`) |

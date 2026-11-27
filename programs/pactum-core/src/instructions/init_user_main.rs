@@ -25,7 +25,6 @@ pub fn handler_init_user_main(ctx: Context<InitUserMain>) -> Result<()> {
     let user_main = &mut ctx.accounts.user_main;
     user_main.authority = ctx.accounts.authority.key();
     user_main.sas_attestation = None;
-    user_main.is_banned = false;
     user_main.bump = ctx.bumps.user_main;
     Ok(())
 }

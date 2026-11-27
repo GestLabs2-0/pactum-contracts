@@ -39,7 +39,6 @@ pub struct UpdateOffer<'info> {
 
     #[account(
         has_one = authority @ PactumCoreError::Unauthorized,
-        constraint = !user_main.is_banned @ PactumCoreError::UserGloballyBanned,
     )]
     pub user_main: Account<'info, UserMainAcc>,
 

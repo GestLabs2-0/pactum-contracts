@@ -57,7 +57,6 @@ pub struct CreateReservation<'info> {
         seeds = [USER_MAIN_SEED.as_bytes(), client_authority.key().as_ref()],
         bump = client_user_main.bump,
         seeds::program = pactum_core::ID,
-        constraint = !client_user_main.is_banned @ PactumEscrowError::ParticipantBanned,
     )]
     pub client_user_main: Box<Account<'info, UserMainAcc>>,
 
@@ -73,7 +72,6 @@ pub struct CreateReservation<'info> {
         seeds = [USER_MAIN_SEED.as_bytes(), provider_user_main.authority.as_ref()],
         bump = provider_user_main.bump,
         seeds::program = pactum_core::ID,
-        constraint = !provider_user_main.is_banned @ PactumEscrowError::ParticipantBanned,
     )]
     pub provider_user_main: Box<Account<'info, UserMainAcc>>,
 
