@@ -29,3 +29,11 @@ pub const ARBITER_APP_SEED: &str = "arbiter_app";
 
 #[constant]
 pub const ARBITER_SEED: &str = "arbiter";
+
+#[constant]
+pub const INTEGRATOR_APP_SEED: &str = "integrator_app";
+
+#[constant]
+pub const INTEGRATOR_SEED: &str = "integrator";
+
+pub const MAX_MARKETPLACE_NAME_LEN: usize = 30;

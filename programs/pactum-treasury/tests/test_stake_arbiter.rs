@@ -1,0 +1,62 @@
+mod common;
+
+use {
+    anchor_lang::{
+        prelude::{system_program, AccountDeserialize, Pubkey},
+        solana_program::instruction::Instruction,
+        InstructionData, ToAccountMetas,
+    },
+    pactum_core::state::ArbiterProfile,
+    pactum_treasury::constants::CPI_AUTHORITY_SEED,
+    solana_keypair::Keypair,
+    solana_signer::Signer,
+};
+
+#[test]
+fn stake_arbiter_transfers_usdc_and_updates_core_via_cpi() {
+    let admin = Keypair::new();
+    let arbiter_auth = Keypair::new();
+    let (mut svm, global_config_pda, treasury_config_pda, usdc_mint) = common::setup_svm(&admin);
+    svm.airdrop(&arbiter_auth.pubkey(), 10_000_000_000).unwrap();
+
+    let market_pda = common::seed_marketplace(&mut svm, 1, 100_000, 1_000_000, 500_000);
+    let arbiter_vault_pda = common::arbiter_vault_pda(&market_pda);
+    let arbiter_pda = common::seed_arbiter(&mut svm, &arbiter_auth.pubkey(), &market_pda, 0, 0);
+    let user_token =
+        common::create_token_account(&mut svm, &usdc_mint, &arbiter_auth.pubkey(), 800_000);
+    let (cpi_authority, _) =
+        Pubkey::find_program_address(&[CPI_AUTHORITY_SEED.as_bytes()], &pactum_treasury::id());
+
+    let ix = Instruction::new_with_bytes(
+        pactum_treasury::id(),
+        &pactum_treasury::instruction::StakeArbiter { amount: 500_000 }.data(),
+        pactum_treasury::accounts::StakeArbiter {
+            authority: arbiter_auth.pubkey(),
+            marketplace: market_pda,
+            arbiter_profile: arbiter_pda,
+            config: treasury_config_pda,
+            global_config: global_config_pda,
+            user_token_account: user_token,
+            arbiter_stake_vault: arbiter_vault_pda,
+            usdc_mint,
+            cpi_authority,
+            core_program: pactum_core::id(),
+            token_program: common::TOKEN_PROGRAM_ID,
+            system_program: system_program::id(),
+        }
+        .to_account_metas(None),
+    );
+    common::send_ix(&mut svm, ix, &arbiter_auth, &[&arbiter_auth]).unwrap();
+
+    assert_eq!(common::token_account_amount(&svm, &user_token), 300_000);
+    assert_eq!(
+        common::token_account_amount(&svm, &arbiter_vault_pda),
+        500_000
+    );
+
+    let profile = ArbiterProfile::try_deserialize(
+        &mut svm.get_account(&arbiter_pda).unwrap().data.as_slice(),
+    )
+    .unwrap();
+    assert_eq!(profile.staked_amount, 500_000);
+}

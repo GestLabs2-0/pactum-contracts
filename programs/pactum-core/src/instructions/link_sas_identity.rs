@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
+use pactum_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
 use solana_sha256_hasher::hash;
-use stayke_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
 
 use crate::{
     constants::{IDENTITY_SEED, USER_MAIN_SEED},
@@ -37,7 +37,7 @@ pub struct LinkSasIdentity<'info> {
     #[account(
         seeds = [GLOBAL_CONFIG_SEED.as_bytes()],
         bump = global_config.bump,
-        seeds::program = stayke_config::ID,
+        seeds::program = pactum_config::ID,
     )]
     pub global_config: Account<'info, GlobalConfig>,
 

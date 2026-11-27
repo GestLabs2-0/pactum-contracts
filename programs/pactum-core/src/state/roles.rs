@@ -6,6 +6,7 @@ pub enum ParticipantRole {
     Provider,
     Judge,
     Arbiter,
+    Integrator,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq, InitSpace)]

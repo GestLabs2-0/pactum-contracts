@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use stayke_config::{assert_cpi_authority, AllowedCaller, GlobalConfig, GLOBAL_CONFIG_SEED};
+use pactum_config::{assert_cpi_authority, AllowedCaller, GlobalConfig, GLOBAL_CONFIG_SEED};
 
 use crate::{
     error::PactumCoreError,
@@ -18,7 +18,7 @@ pub struct CpiUpdateRoleReview<'info> {
     #[account(
         seeds = [GLOBAL_CONFIG_SEED.as_bytes()],
         bump = global_config.bump,
-        seeds::program = stayke_config::ID,
+        seeds::program = pactum_config::ID,
     )]
     pub global_config: Account<'info, GlobalConfig>,
 
@@ -74,7 +74,7 @@ pub fn handler_cpi_update_role_review(
                 provider.total_reviews,
             )
         }
-        ParticipantRole::Judge | ParticipantRole::Arbiter => {
+        ParticipantRole::Judge | ParticipantRole::Arbiter | ParticipantRole::Integrator => {
             return err!(PactumCoreError::InvalidRole);
         }
     };

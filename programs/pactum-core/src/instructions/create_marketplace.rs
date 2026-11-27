@@ -1,17 +1,19 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constants::MARKETPLACE_SEED,
+    constants::{MARKETPLACE_SEED, MAX_MARKETPLACE_NAME_LEN},
     error::PactumCoreError,
     events::MarketplaceCreated,
-    state::{DisputeMode, Marketplace, StorageBackend},
+    state::{DisputeMode, IntegratorPolicy, Marketplace, StorageBackend},
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub struct CreateMarketplaceParams {
+    pub name: String,
     pub committee: Pubkey,
     pub dispute_mode: DisputeMode,
     pub storage_backend: StorageBackend,
+    pub integrator_policy: IntegratorPolicy,
     pub kyb_credential: Option<Pubkey>,
     pub requires_identity: bool,
     pub min_judge_stake: u64,
@@ -44,6 +46,10 @@ pub fn handler_create_marketplace(
     params: CreateMarketplaceParams,
 ) -> Result<()> {
     require!(
+        !params.name.trim().is_empty() && params.name.len() <= MAX_MARKETPLACE_NAME_LEN,
+        PactumCoreError::InvalidMarketplaceConfig
+    );
+    require!(
         params.committee != Pubkey::default(),
         PactumCoreError::InvalidMarketplaceConfig
     );
@@ -56,9 +62,11 @@ pub fn handler_create_marketplace(
 
     let marketplace = &mut ctx.accounts.marketplace;
     marketplace.market_id = market_id;
+    marketplace.name = params.name;
     marketplace.committee = params.committee;
     marketplace.dispute_mode = params.dispute_mode;
     marketplace.storage_backend = params.storage_backend;
+    marketplace.integrator_policy = params.integrator_policy;
     marketplace.kyb_credential = params.kyb_credential;
     marketplace.requires_identity = params.requires_identity;
     marketplace.min_judge_stake = params.min_judge_stake;

@@ -238,9 +238,11 @@ fn apply_as_arbiter_enforces_marketplace_kyb_credential() {
         &pactum_core::instruction::CreateMarketplace {
             market_id,
             params: CreateMarketplaceParams {
+                name: "Arbiter Market".to_string(),
                 committee: Pubkey::new_unique(),
                 dispute_mode: DisputeMode::ArbiterOnly,
                 storage_backend: StorageBackend::Arweave,
+                integrator_policy: pactum_core::state::IntegratorPolicy::Permissionless,
                 kyb_credential: Some(market_kyb_cred),
                 requires_identity: false,
                 min_judge_stake: 0,

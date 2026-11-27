@@ -16,14 +16,14 @@ use {
 
 fn default_update_params() -> UpdateMarketplaceParams {
     UpdateMarketplaceParams {
+        name: None,
         min_judge_stake: None,
         max_judge_stake: None,
         min_arbiter_stake: None,
         min_jury_fee: None,
+        integrator_policy: None,
         kyb_credential: None,
-        requires_identity: None,
         is_active: None,
-        new_committee: None,
     }
 }
 
