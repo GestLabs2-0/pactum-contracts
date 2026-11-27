@@ -114,4 +114,8 @@ pub mod pactum_escrow {
     ) -> Result<()> {
         handler_provider_reject_reservation_cross_year(ctx)
     }
+
+    pub fn expire_reservation(ctx: Context<ExpireReservation>) -> Result<()> {
+        handler_expire_reservation(ctx)
+    }
 }
