@@ -144,4 +144,8 @@ pub mod pactum_escrow {
     ) -> Result<()> {
         handler_client_cancel_reservation_cross_year(ctx)
     }
+
+    pub fn provider_cancel_reservation(ctx: Context<ProviderCancelReservation>) -> Result<()> {
+        handler_provider_cancel_reservation(ctx)
+    }
 }
