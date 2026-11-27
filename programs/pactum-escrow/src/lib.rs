@@ -122,4 +122,8 @@ pub mod pactum_escrow {
     pub fn expire_reservation_cross_year(ctx: Context<ExpireReservationCrossYear>) -> Result<()> {
         handler_expire_reservation_cross_year(ctx)
     }
+
+    pub fn reservation_starts(ctx: Context<ReservationStarts>) -> Result<()> {
+        handler_reservation_starts(ctx)
+    }
 }
