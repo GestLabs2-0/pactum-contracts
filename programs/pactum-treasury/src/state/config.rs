@@ -6,8 +6,6 @@ use anchor_lang::prelude::*;
 pub struct TreasuryConfig {
     pub authority: Pubkey,
     pub global_config: Pubkey,
-    pub stake_vault: Pubkey,
-    pub treasury_bump: u8,
     pub is_initialized: bool,
     pub bump: u8,
 }

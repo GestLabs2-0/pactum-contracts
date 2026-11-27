@@ -10,9 +10,12 @@ use {
     pactum_config::{constants::GLOBAL_CONFIG_SEED, state::GlobalConfig},
     pactum_core::{
         constants::{ARBITER_SEED, JUDGE_SEED, MARKETPLACE_SEED, USER_MAIN_SEED},
-        state::{ArbiterProfile, DisputeMode, Judge, Marketplace, StorageBackend, UserMainAcc},
+        state::{
+            ArbiterProfile, DisputeMode, IntegratorPolicy, Judge, Marketplace, StorageBackend,
+            UserMainAcc,
+        },
     },
-    pactum_treasury::constants::{STAKE_VAULT_SEED, TREASURY_CONFIG_SEED, TREASURY_SEED},
+    pactum_treasury::constants::{ARBITER_VAULT_SEED, JUDGE_VAULT_SEED, TREASURY_CONFIG_SEED},
     solana_account::Account,
     solana_keypair::Keypair,
     solana_message::{Message, VersionedMessage},
@@ -31,7 +34,7 @@ pub fn serialize_account<T: AccountSerialize>(data: &T) -> Vec<u8> {
     out
 }
 
-pub fn setup_svm(authority: &Keypair) -> (LiteSVM, Pubkey, Pubkey, Pubkey, Pubkey, Pubkey) {
+pub fn setup_svm(authority: &Keypair) -> (LiteSVM, Pubkey, Pubkey, Pubkey) {
     let mut svm = LiteSVM::new();
     let config_bytes = include_bytes!("../../../../target/deploy/pactum_config.so");
     let core_bytes = include_bytes!("../../../../target/deploy/pactum_core.so");
@@ -77,10 +80,6 @@ pub fn setup_svm(authority: &Keypair) -> (LiteSVM, Pubkey, Pubkey, Pubkey, Pubke
 
     let (treasury_config_pda, _) =
         Pubkey::find_program_address(&[TREASURY_CONFIG_SEED.as_bytes()], &pactum_treasury::id());
-    let (treasury_pda, _) =
-        Pubkey::find_program_address(&[TREASURY_SEED.as_bytes()], &pactum_treasury::id());
-    let (stake_vault_pda, _) =
-        Pubkey::find_program_address(&[STAKE_VAULT_SEED.as_bytes()], &pactum_treasury::id());
 
     let ix = Instruction::new_with_bytes(
         pactum_treasury::id(),
@@ -88,25 +87,14 @@ pub fn setup_svm(authority: &Keypair) -> (LiteSVM, Pubkey, Pubkey, Pubkey, Pubke
         pactum_treasury::accounts::InitializeTreasury {
             authority: authority.pubkey(),
             config: treasury_config_pda,
-            treasury_pda,
-            stake_vault: stake_vault_pda,
-            usdc_mint,
             global_config: global_config_pda,
-            token_program: TOKEN_PROGRAM_ID,
             system_program: system_program::id(),
         }
         .to_account_metas(None),
     );
     send_ix(&mut svm, ix, authority, &[authority]).unwrap();
 
-    (
-        svm,
-        global_config_pda,
-        treasury_config_pda,
-        treasury_pda,
-        stake_vault_pda,
-        usdc_mint,
-    )
+    (svm, global_config_pda, treasury_config_pda, usdc_mint)
 }
 
 pub fn create_mint(svm: &mut LiteSVM, mint_authority: &Pubkey, decimals: u8) -> Pubkey {
@@ -131,13 +119,29 @@ pub fn create_mint(svm: &mut LiteSVM, mint_authority: &Pubkey, decimals: u8) -> 
     kp.pubkey()
 }
 
-pub fn create_token_account(
+pub fn judge_vault_pda(marketplace: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[JUDGE_VAULT_SEED.as_bytes(), marketplace.as_ref()],
+        &pactum_treasury::id(),
+    )
+    .0
+}
+
+pub fn arbiter_vault_pda(marketplace: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[ARBITER_VAULT_SEED.as_bytes(), marketplace.as_ref()],
+        &pactum_treasury::id(),
+    )
+    .0
+}
+
+pub fn seed_token_account_at(
     svm: &mut LiteSVM,
+    address: &Pubkey,
     mint: &Pubkey,
     owner: &Pubkey,
     amount: u64,
-) -> Pubkey {
-    let kp = Keypair::new();
+) {
     let mut data = vec![0u8; TOKEN_ACCOUNT_LEN];
     data[0..32].copy_from_slice(mint.as_ref());
     data[32..64].copy_from_slice(owner.as_ref());
@@ -145,7 +149,7 @@ pub fn create_token_account(
     data[108] = 1;
     let lamports = svm.minimum_balance_for_rent_exemption(TOKEN_ACCOUNT_LEN);
     svm.set_account(
-        kp.pubkey(),
+        *address,
         Account {
             lamports,
             data,
@@ -155,6 +159,16 @@ pub fn create_token_account(
         },
     )
     .unwrap();
+}
+
+pub fn create_token_account(
+    svm: &mut LiteSVM,
+    mint: &Pubkey,
+    owner: &Pubkey,
+    amount: u64,
+) -> Pubkey {
+    let kp = Keypair::new();
+    seed_token_account_at(svm, &kp.pubkey(), mint, owner, amount);
     kp.pubkey()
 }
 
@@ -194,9 +208,11 @@ pub fn seed_marketplace(
     );
     let market = Marketplace {
         market_id,
+        name: format!("Market {market_id}"),
         committee: Pubkey::new_unique(),
         dispute_mode: DisputeMode::Hybrid,
         storage_backend: StorageBackend::Arweave,
+        integrator_policy: IntegratorPolicy::Permissionless,
         kyb_credential: None,
         requires_identity: false,
         min_judge_stake,

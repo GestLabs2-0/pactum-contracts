@@ -10,7 +10,7 @@ use pactum_core::{
 };
 
 use crate::{
-    constants::{CPI_AUTHORITY_SEED, TREASURY_CONFIG_SEED},
+    constants::{ARBITER_VAULT_SEED, CPI_AUTHORITY_SEED, TREASURY_CONFIG_SEED},
     error::PactumTreasuryError,
     events::StakeUpdated,
     state::TreasuryConfig,
@@ -18,6 +18,7 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct StakeArbiter<'info> {
+    #[account(mut)]
     pub authority: Signer<'info>,
 
     #[account(
@@ -59,10 +60,14 @@ pub struct StakeArbiter<'info> {
     pub user_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-        mut,
-        constraint = stake_vault.key() == config.stake_vault @ PactumTreasuryError::InvalidStakeVault,
+        init_if_needed,
+        payer = authority,
+        token::mint = usdc_mint,
+        token::authority = arbiter_stake_vault,
+        seeds = [ARBITER_VAULT_SEED.as_bytes(), marketplace.key().as_ref()],
+        bump,
     )]
-    pub stake_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub arbiter_stake_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         constraint = usdc_mint.key() == global_config.usdc_mint @ PactumTreasuryError::InvalidTokenMint,
@@ -75,6 +80,7 @@ pub struct StakeArbiter<'info> {
 
     pub core_program: Program<'info, PactumCore>,
     pub token_program: Interface<'info, TokenInterface>,
+    pub system_program: Program<'info, System>,
 }
 
 pub fn handler_stake_arbiter(ctx: Context<StakeArbiter>, amount: u64) -> Result<()> {
@@ -95,7 +101,7 @@ pub fn handler_stake_arbiter(ctx: Context<StakeArbiter>, amount: u64) -> Result<
         ctx.accounts.token_program.key(),
         TransferChecked {
             from: ctx.accounts.user_token_account.to_account_info(),
-            to: ctx.accounts.stake_vault.to_account_info(),
+            to: ctx.accounts.arbiter_stake_vault.to_account_info(),
             authority: ctx.accounts.authority.to_account_info(),
             mint: ctx.accounts.usdc_mint.to_account_info(),
         },

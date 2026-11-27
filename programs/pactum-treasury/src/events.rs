@@ -5,7 +5,6 @@ use pactum_core::state::ParticipantRole;
 pub struct TreasuryInitialized {
     pub authority: Pubkey,
     pub global_config: Pubkey,
-    pub stake_vault: Pubkey,
 }
 
 #[event]
@@ -20,6 +19,7 @@ pub struct StakeUpdated {
 
 #[event]
 pub struct StakeSlashed {
+    pub marketplace: Pubkey,
     pub target: Pubkey,
     pub role: ParticipantRole,
     pub amount: u64,

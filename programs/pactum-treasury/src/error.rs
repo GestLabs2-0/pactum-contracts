@@ -47,6 +47,9 @@ pub enum PactumTreasuryError {
     #[msg("Missing target role account")]
     MissingTargetAccount,
 
+    #[msg("Target account does not belong to the provided marketplace")]
+    InvalidMarketplace,
+
     #[msg("Arithmetic overflow or underflow")]
     MathOverflow,
 }

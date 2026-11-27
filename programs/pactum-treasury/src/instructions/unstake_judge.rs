@@ -10,7 +10,7 @@ use pactum_core::{
 };
 
 use crate::{
-    constants::{CPI_AUTHORITY_SEED, TREASURY_CONFIG_SEED, TREASURY_SEED},
+    constants::{CPI_AUTHORITY_SEED, JUDGE_VAULT_SEED, TREASURY_CONFIG_SEED},
     error::PactumTreasuryError,
     events::StakeUpdated,
     state::TreasuryConfig,
@@ -59,15 +59,12 @@ pub struct UnstakeJudge<'info> {
     )]
     pub global_config: Box<Account<'info, GlobalConfig>>,
 
-    /// CHECK: Treasury PDA that signs the SPL Token transfer out of `stake_vault`.
-    #[account(seeds = [TREASURY_SEED.as_bytes()], bump = config.treasury_bump)]
-    pub treasury_pda: UncheckedAccount<'info>,
-
     #[account(
         mut,
-        constraint = stake_vault.key() == config.stake_vault @ PactumTreasuryError::InvalidStakeVault,
+        seeds = [JUDGE_VAULT_SEED.as_bytes(), marketplace.key().as_ref()],
+        bump,
     )]
-    pub stake_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub judge_stake_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -112,19 +109,21 @@ pub fn handler_unstake_judge(ctx: Context<UnstakeJudge>, amount: u64) -> Result<
         );
     }
 
-    let treasury_seeds: &[&[&[u8]]] = &[&[
-        TREASURY_SEED.as_bytes(),
-        &[ctx.accounts.config.treasury_bump],
+    let marketplace_key = ctx.accounts.marketplace.key();
+    let vault_seeds: &[&[&[u8]]] = &[&[
+        JUDGE_VAULT_SEED.as_bytes(),
+        marketplace_key.as_ref(),
+        &[ctx.bumps.judge_stake_vault],
     ]];
     let cpi_transfer = CpiContext::new_with_signer(
         ctx.accounts.token_program.key(),
         TransferChecked {
-            from: ctx.accounts.stake_vault.to_account_info(),
+            from: ctx.accounts.judge_stake_vault.to_account_info(),
             to: ctx.accounts.user_token_account.to_account_info(),
-            authority: ctx.accounts.treasury_pda.to_account_info(),
+            authority: ctx.accounts.judge_stake_vault.to_account_info(),
             mint: ctx.accounts.usdc_mint.to_account_info(),
         },
-        treasury_seeds,
+        vault_seeds,
     );
     transfer_checked(cpi_transfer, amount, ctx.accounts.usdc_mint.decimals)?;
 

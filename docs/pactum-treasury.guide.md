@@ -3,14 +3,14 @@
 > **As implemented** — documenta el programa `programs/pactum-treasury` en `pactum-contracts` (`HV16vUTaZ78bJP1CyH5KDWyx8NqS1MYSGdPkRsMcnSuY`).
 > **SoT técnica:** [pactum-programs-spec.md](../../docs/architecture/pactum-programs-spec.md).
 
-`pactum-treasury` custodia únicamente los *stakes* continuos en USDC de `Judge` y `ArbiterProfile` dentro de `stake_vault`, manteniendo las garantías opcionales de cada acuerdo aisladas en `pactum-escrow`. Toda actualización de saldo en `pactum-core` se ejecuta vía CPI firmada por la PDA `cpi_authority` de `treasury`, y el *slashing* (`cpi_slash_stake`) solo puede invocarse vía CPI desde `pactum-disputes`.
+`pactum-treasury` custodia únicamente los *stakes* continuos en USDC de `Judge` y `ArbiterProfile` en bóvedas segregadas por **rol y `Marketplace`** (`judge_stake_vault` y `arbiter_stake_vault`), manteniendo las garantías opcionales de cada acuerdo aisladas en `pactum-escrow`. Toda actualización de saldo en `pactum-core` se ejecuta vía CPI firmada por la PDA `cpi_authority` de `treasury`, y el *slashing* (`cpi_slash_stake`) solo puede invocarse vía CPI desde `pactum-disputes` validando que la bóveda corresponda al rol y `marketplace` del perfil penalizado.
 
 ## Camino rápido
 
-1. **Admin:** `initialize_treasury` → crea `TreasuryConfig` (`["treasury_config"]`) y `stake_vault` (`["stake_vault"]`).
-2. **Jurados (`Judge`):** `stake_judge(amount, pool_id, leaf_index)` deposita USDC y actualiza `Judge` vía CPI; `unstake_judge(amount)` retira si `active_disputes == 0`.
-3. **Árbitros B2B (`ArbiterProfile`):** `stake_arbiter(amount)` deposita USDC (exige `is_active` y `>= min_arbiter_stake`); `unstake_arbiter(amount)` retira si `active_disputes == 0`.
-4. **Slashing (solo CPI desde `pactum-disputes`):** `cpi_slash_stake(target_role, amount)` descuenta el *stake* en `pactum-core` y transfiere USDC desde `stake_vault` hacia `recipient_token_account`.
+1. **Admin:** `initialize_treasury` → crea `TreasuryConfig` (`["treasury_config"]`).
+2. **Jurados (`Judge`):** `stake_judge(amount, pool_id, leaf_index)` crea si hace falta (`init_if_needed`) `judge_stake_vault` (`["judge_stake_vault", marketplace]`), deposita USDC y actualiza `Judge` vía CPI; `unstake_judge(amount)` retira desde `judge_stake_vault` si `active_disputes == 0`.
+3. **Árbitros B2B (`ArbiterProfile`):** `stake_arbiter(amount)` crea si hace falta (`init_if_needed`) `arbiter_stake_vault` (`["arbiter_stake_vault", marketplace]`), deposita USDC (exige `is_active` y `>= min_arbiter_stake`) y actualiza `ArbiterProfile` vía CPI; `unstake_arbiter(amount)` retira desde `arbiter_stake_vault` si `active_disputes == 0`.
+4. **Slashing (solo CPI desde `pactum-disputes`):** `cpi_slash_stake(target_role, amount)` valida `marketplace` y que `stake_vault` sea el PDA del rol en ese mercado, descuenta el *stake* en `pactum-core` y transfiere USDC hacia `recipient_token_account`.
 
 ### Diagrama de flujo
 
@@ -30,8 +30,9 @@ flowchart TD
 
 | Cuenta | Seeds | Campos clave |
 |--------|-------|--------------|
-| `TreasuryConfig` | `["treasury_config"]` | `authority`, `global_config`, `stake_vault`, `treasury_bump`, `is_initialized`, `bump` |
-| `stake_vault` | `["stake_vault"]` | Token Account USDC controlada por `treasury_pda` (`["treasury"]`) |
+| `TreasuryConfig` | `["treasury_config"]` | `authority`, `global_config`, `is_initialized`, `bump` |
+| `judge_stake_vault` | `["judge_stake_vault", marketplace]` | Token Account USDC auto-custodiada por marketplace para `Judge` (`token::authority = judge_stake_vault`) |
+| `arbiter_stake_vault` | `["arbiter_stake_vault", marketplace]` | Token Account USDC auto-custodiada por marketplace para `ArbiterProfile` (`token::authority = arbiter_stake_vault`) |
 
 ### Instrucciones (`instructions/`)
 

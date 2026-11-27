@@ -2,7 +2,7 @@ mod common;
 
 use {
     anchor_lang::{
-        prelude::{AccountDeserialize, Pubkey},
+        prelude::{system_program, AccountDeserialize, Pubkey},
         solana_program::instruction::Instruction,
         InstructionData, ToAccountMetas,
     },
@@ -16,11 +16,11 @@ use {
 fn stake_judge_transfers_usdc_and_updates_core_via_cpi() {
     let admin = Keypair::new();
     let judge_auth = Keypair::new();
-    let (mut svm, global_config_pda, treasury_config_pda, _, stake_vault_pda, usdc_mint) =
-        common::setup_svm(&admin);
+    let (mut svm, global_config_pda, treasury_config_pda, usdc_mint) = common::setup_svm(&admin);
     svm.airdrop(&judge_auth.pubkey(), 10_000_000_000).unwrap();
 
     let market_pda = common::seed_marketplace(&mut svm, 1, 100_000, 1_000_000, 500_000);
+    let judge_vault_pda = common::judge_vault_pda(&market_pda);
     let (user_main_pda, judge_pda) =
         common::seed_judge(&mut svm, &judge_auth.pubkey(), &market_pda, 0, 0);
     let user_token =
@@ -44,11 +44,12 @@ fn stake_judge_transfers_usdc_and_updates_core_via_cpi() {
             config: treasury_config_pda,
             global_config: global_config_pda,
             user_token_account: user_token,
-            stake_vault: stake_vault_pda,
+            judge_stake_vault: judge_vault_pda,
             usdc_mint,
             cpi_authority,
             core_program: pactum_core::id(),
             token_program: common::TOKEN_PROGRAM_ID,
+            system_program: system_program::id(),
         }
         .to_account_metas(None),
     );
@@ -56,7 +57,7 @@ fn stake_judge_transfers_usdc_and_updates_core_via_cpi() {
 
     assert_eq!(common::token_account_amount(&svm, &user_token), 250_000);
     assert_eq!(
-        common::token_account_amount(&svm, &stake_vault_pda),
+        common::token_account_amount(&svm, &judge_vault_pda),
         250_000
     );
 
@@ -71,11 +72,11 @@ fn stake_judge_transfers_usdc_and_updates_core_via_cpi() {
 fn stake_judge_rejects_above_max_judge_stake() {
     let admin = Keypair::new();
     let judge_auth = Keypair::new();
-    let (mut svm, global_config_pda, treasury_config_pda, _, stake_vault_pda, usdc_mint) =
-        common::setup_svm(&admin);
+    let (mut svm, global_config_pda, treasury_config_pda, usdc_mint) = common::setup_svm(&admin);
     svm.airdrop(&judge_auth.pubkey(), 10_000_000_000).unwrap();
 
     let market_pda = common::seed_marketplace(&mut svm, 1, 100_000, 500_000, 500_000);
+    let judge_vault_pda = common::judge_vault_pda(&market_pda);
     let (user_main_pda, judge_pda) =
         common::seed_judge(&mut svm, &judge_auth.pubkey(), &market_pda, 0, 0);
     let user_token =
@@ -99,11 +100,12 @@ fn stake_judge_rejects_above_max_judge_stake() {
             config: treasury_config_pda,
             global_config: global_config_pda,
             user_token_account: user_token,
-            stake_vault: stake_vault_pda,
+            judge_stake_vault: judge_vault_pda,
             usdc_mint,
             cpi_authority,
             core_program: pactum_core::id(),
             token_program: common::TOKEN_PROGRAM_ID,
+            system_program: system_program::id(),
         }
         .to_account_metas(None),
     );

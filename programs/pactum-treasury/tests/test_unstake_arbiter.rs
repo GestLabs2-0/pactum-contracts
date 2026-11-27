@@ -16,16 +16,20 @@ use {
 fn unstake_arbiter_returns_usdc_when_no_active_disputes() {
     let admin = Keypair::new();
     let arbiter_auth = Keypair::new();
-    let (mut svm, global_config_pda, treasury_config_pda, treasury_pda, stake_vault_pda, usdc_mint) =
-        common::setup_svm(&admin);
+    let (mut svm, global_config_pda, treasury_config_pda, usdc_mint) = common::setup_svm(&admin);
     svm.airdrop(&arbiter_auth.pubkey(), 10_000_000_000).unwrap();
 
     let market_pda = common::seed_marketplace(&mut svm, 1, 100_000, 1_000_000, 500_000);
+    let arbiter_vault_pda = common::arbiter_vault_pda(&market_pda);
     let arbiter_pda =
         common::seed_arbiter(&mut svm, &arbiter_auth.pubkey(), &market_pda, 500_000, 0);
-    let mut vault_acc = svm.get_account(&stake_vault_pda).unwrap();
-    vault_acc.data[64..72].copy_from_slice(&500_000u64.to_le_bytes());
-    svm.set_account(stake_vault_pda, vault_acc).unwrap();
+    common::seed_token_account_at(
+        &mut svm,
+        &arbiter_vault_pda,
+        &usdc_mint,
+        &arbiter_vault_pda,
+        500_000,
+    );
 
     let user_token = common::create_token_account(&mut svm, &usdc_mint, &arbiter_auth.pubkey(), 0);
     let (cpi_authority, _) =
@@ -40,8 +44,7 @@ fn unstake_arbiter_returns_usdc_when_no_active_disputes() {
             arbiter_profile: arbiter_pda,
             config: treasury_config_pda,
             global_config: global_config_pda,
-            treasury_pda,
-            stake_vault: stake_vault_pda,
+            arbiter_stake_vault: arbiter_vault_pda,
             user_token_account: user_token,
             usdc_mint,
             cpi_authority,
@@ -53,6 +56,7 @@ fn unstake_arbiter_returns_usdc_when_no_active_disputes() {
     common::send_ix(&mut svm, ix, &arbiter_auth, &[&arbiter_auth]).unwrap();
 
     assert_eq!(common::token_account_amount(&svm, &user_token), 500_000);
+    assert_eq!(common::token_account_amount(&svm, &arbiter_vault_pda), 0);
     let profile = ArbiterProfile::try_deserialize(
         &mut svm.get_account(&arbiter_pda).unwrap().data.as_slice(),
     )
