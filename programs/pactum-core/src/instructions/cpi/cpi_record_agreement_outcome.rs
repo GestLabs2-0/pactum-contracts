@@ -78,7 +78,7 @@ pub fn handler_cpi_record_agreement_outcome(
                 }
             }
         }
-        ParticipantRole::Judge | ParticipantRole::Arbiter => {
+        ParticipantRole::Judge | ParticipantRole::Arbiter | ParticipantRole::Integrator => {
             return err!(PactumCoreError::InvalidRole);
         }
     }

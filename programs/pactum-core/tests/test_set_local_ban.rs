@@ -69,6 +69,7 @@ fn set_local_ban_by_committee_bans_client() {
             client: Some(client_pda),
             provider: None,
             judge: None,
+            integrator: None,
         }
         .to_account_metas(None),
     );

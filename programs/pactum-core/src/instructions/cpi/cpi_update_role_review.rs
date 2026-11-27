@@ -74,7 +74,7 @@ pub fn handler_cpi_update_role_review(
                 provider.total_reviews,
             )
         }
-        ParticipantRole::Judge | ParticipantRole::Arbiter => {
+        ParticipantRole::Judge | ParticipantRole::Arbiter | ParticipantRole::Integrator => {
             return err!(PactumCoreError::InvalidRole);
         }
     };

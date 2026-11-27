@@ -118,6 +118,33 @@ pub mod pactum_core {
     }
 
     // -------------------------------------------------------------------------
+    // Integrators
+    // -------------------------------------------------------------------------
+
+    pub fn init_integrator(ctx: Context<InitIntegrator>, default_fee_bps: u16) -> Result<()> {
+        handler_init_integrator(ctx, default_fee_bps)
+    }
+
+    pub fn apply_as_integrator(
+        ctx: Context<ApplyAsIntegrator>,
+        default_fee_bps: u16,
+        id_hash: Option<[u8; 32]>,
+    ) -> Result<()> {
+        handler_apply_as_integrator(ctx, default_fee_bps, id_hash)
+    }
+
+    pub fn review_integrator_application(
+        ctx: Context<ReviewIntegratorApplication>,
+        approve: bool,
+    ) -> Result<()> {
+        handler_review_integrator_application(ctx, approve)
+    }
+
+    pub fn revoke_integrator(ctx: Context<RevokeIntegrator>) -> Result<()> {
+        handler_revoke_integrator(ctx)
+    }
+
+    // -------------------------------------------------------------------------
     // Privileged CPI Mutators (assert_cpi_authority)
     // -------------------------------------------------------------------------
 

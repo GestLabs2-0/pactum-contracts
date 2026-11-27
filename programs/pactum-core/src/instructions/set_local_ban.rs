@@ -1,10 +1,12 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constants::{CLIENT_SEED, JUDGE_SEED, MARKETPLACE_SEED, PROVIDER_SEED},
+    constants::{CLIENT_SEED, INTEGRATOR_SEED, JUDGE_SEED, MARKETPLACE_SEED, PROVIDER_SEED},
     error::PactumCoreError,
     events::LocalBanUpdated,
-    state::{Client, Judge, Marketplace, ParticipantRole, Provider, UserMainAcc},
+    state::{
+        Client, IntegratorProfile, Judge, Marketplace, ParticipantRole, Provider, UserMainAcc,
+    },
 };
 
 #[derive(Accounts)]
@@ -40,6 +42,13 @@ pub struct SetLocalBan<'info> {
         bump = judge.bump,
     )]
     pub judge: Option<Account<'info, Judge>>,
+
+    #[account(
+        mut,
+        seeds = [INTEGRATOR_SEED.as_bytes(), marketplace.key().as_ref(), user_main.authority.as_ref()],
+        bump = integrator.bump,
+    )]
+    pub integrator: Option<Account<'info, IntegratorProfile>>,
 }
 
 pub fn handler_set_local_ban(
@@ -71,6 +80,14 @@ pub fn handler_set_local_ban(
                 .as_mut()
                 .ok_or(PactumCoreError::MissingRoleAccount)?;
             judge.is_banned = banned;
+        }
+        ParticipantRole::Integrator => {
+            let integrator = ctx
+                .accounts
+                .integrator
+                .as_mut()
+                .ok_or(PactumCoreError::MissingRoleAccount)?;
+            integrator.is_banned = banned;
         }
         ParticipantRole::Arbiter => return err!(PactumCoreError::InvalidRole),
     }

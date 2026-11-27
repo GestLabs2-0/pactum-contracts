@@ -188,9 +188,11 @@ pub fn create_marketplace_account(
         &pactum_core::instruction::CreateMarketplace {
             market_id,
             params: CreateMarketplaceParams {
+                name: format!("Market {market_id}"),
                 committee,
                 dispute_mode,
                 storage_backend: StorageBackend::Arweave,
+                integrator_policy: pactum_core::state::IntegratorPolicy::Permissionless,
                 kyb_credential: None,
                 requires_identity,
                 min_judge_stake: 100,

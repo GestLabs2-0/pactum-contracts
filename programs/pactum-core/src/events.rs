@@ -46,6 +46,20 @@ pub struct ArbiterReviewed {
 }
 
 #[event]
+pub struct IntegratorInitialized {
+    pub marketplace: Pubkey,
+    pub authority: Pubkey,
+    pub default_fee_bps: u16,
+}
+
+#[event]
+pub struct IntegratorReviewed {
+    pub marketplace: Pubkey,
+    pub authority: Pubkey,
+    pub approved: bool,
+}
+
+#[event]
 pub struct RoleReviewRecorded {
     pub marketplace: Pubkey,
     pub user_main: Pubkey,

@@ -89,4 +89,10 @@ pub enum PactumCoreError {
 
     #[msg("This identity hash is already linked to another wallet")]
     IdentityAlreadyClaimed,
+
+    #[msg("Marketplace integrator policy does not allow this action")]
+    InvalidIntegratorPolicy,
+
+    #[msg("Invalid integrator parameters")]
+    InvalidIntegratorParams,
 }

@@ -53,7 +53,7 @@ pub fn handler_cpi_update_active_disputes(
                 .ok_or(PactumCoreError::MissingRoleAccount)?;
             arbiter.active_disputes = apply_i8_delta(arbiter.active_disputes, delta)?;
         }
-        ParticipantRole::Client | ParticipantRole::Provider => {
+        ParticipantRole::Client | ParticipantRole::Provider | ParticipantRole::Integrator => {
             return err!(PactumCoreError::InvalidRole);
         }
     }
