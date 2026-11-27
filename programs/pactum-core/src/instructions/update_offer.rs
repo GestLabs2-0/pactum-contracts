@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{
     constants::OFFER_SEED,
     error::PactumCoreError,
-    state::{Offer, PricingType, Provider, UserMainAcc},
+    state::{CancellationPolicy, Offer, PricingType, Provider, UserMainAcc},
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
@@ -12,6 +12,7 @@ pub struct UpdateOfferParams {
     pub provider_bond: Option<u64>,
     pub required_client_bond: Option<u64>,
     pub default_arbiter: Option<Option<Pubkey>>,
+    pub cancellation_policy: Option<Option<CancellationPolicy>>,
     pub content_ref: Option<[u8; 32]>,
     pub state_hash: Option<[u8; 32]>,
     pub is_active: Option<bool>,
@@ -63,6 +64,12 @@ pub fn handler_update_offer(ctx: Context<UpdateOffer>, params: UpdateOfferParams
     }
     if let Some(default_arbiter) = params.default_arbiter {
         offer.default_arbiter = default_arbiter;
+    }
+    if let Some(cancellation_policy) = params.cancellation_policy {
+        if let Some(policy) = cancellation_policy {
+            policy.validate()?;
+        }
+        offer.cancellation_policy = cancellation_policy;
     }
     if let Some(content_ref) = params.content_ref {
         offer.content_ref = content_ref;

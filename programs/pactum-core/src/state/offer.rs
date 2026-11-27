@@ -7,6 +7,24 @@ pub enum PricingType {
     DateRange,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq, InitSpace)]
+pub struct CancellationPolicy {
+    /// Hours before check-in inside which client cancellation splits apply.
+    pub window_hours: u32,
+    /// Percentage (0..=100) of total_amount refunded to client inside the window.
+    pub client_refund_pct: u8,
+}
+
+impl CancellationPolicy {
+    pub fn validate(&self) -> Result<()> {
+        require!(
+            self.client_refund_pct <= crate::constants::MAX_PERCENTAGE,
+            crate::error::PactumCoreError::InvalidOfferParams
+        );
+        Ok(())
+    }
+}
+
 /// Seeds: `[OFFER_SEED.as_bytes(), provider.key().as_ref(), offer_id.to_le_bytes().as_ref()]` (`["offer", provider, offer_id]`).
 #[account]
 #[derive(InitSpace)]
@@ -19,6 +37,7 @@ pub struct Offer {
     pub required_client_bond: u64,
     pub jury_fee: u64,
     pub default_arbiter: Option<Pubkey>,
+    pub cancellation_policy: Option<CancellationPolicy>,
     pub content_ref: [u8; 32],
     pub state_hash: [u8; 32],
     pub is_active: bool,

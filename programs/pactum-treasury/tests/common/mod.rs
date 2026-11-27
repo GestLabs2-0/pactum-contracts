@@ -221,6 +221,7 @@ pub fn seed_marketplace(
         max_judge_stake,
         min_arbiter_stake,
         min_jury_fee: 0,
+        provider_cancellation_penalty_pct: 10,
         pool_count: 1,
         is_active: true,
         bump,

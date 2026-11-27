@@ -4,7 +4,9 @@ use crate::{
     constants::{OFFER_SEED, PROVIDER_SEED, USER_MAIN_SEED},
     error::PactumCoreError,
     events::OfferCreated,
-    state::{DisputeMode, Marketplace, Offer, PricingType, Provider, UserMainAcc},
+    state::{
+        CancellationPolicy, DisputeMode, Marketplace, Offer, PricingType, Provider, UserMainAcc,
+    },
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
@@ -16,6 +18,7 @@ pub struct CreateOfferParams {
     pub required_client_bond: u64,
     pub jury_fee: u64,
     pub default_arbiter: Option<Pubkey>,
+    pub cancellation_policy: Option<CancellationPolicy>,
     pub content_ref: [u8; 32],
     pub state_hash: [u8; 32],
 }
@@ -81,6 +84,9 @@ pub fn handler_create_offer(ctx: Context<CreateOffer>, params: CreateOfferParams
             PactumCoreError::InvalidOfferParams
         );
     }
+    if let Some(policy) = params.cancellation_policy {
+        policy.validate()?;
+    }
 
     let provider = &mut ctx.accounts.provider;
     let offer_id = provider.offer_count;
@@ -97,6 +103,7 @@ pub fn handler_create_offer(ctx: Context<CreateOffer>, params: CreateOfferParams
     offer.required_client_bond = params.required_client_bond;
     offer.jury_fee = params.jury_fee;
     offer.default_arbiter = params.default_arbiter;
+    offer.cancellation_policy = params.cancellation_policy;
     offer.content_ref = params.content_ref;
     offer.state_hash = params.state_hash;
     offer.is_active = true;

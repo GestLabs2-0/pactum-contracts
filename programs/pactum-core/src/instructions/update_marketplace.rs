@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constants::{MARKETPLACE_SEED, MAX_MARKETPLACE_NAME_LEN},
+    constants::{MARKETPLACE_SEED, MAX_MARKETPLACE_NAME_LEN, MAX_PERCENTAGE},
     error::PactumCoreError,
     events::MarketplaceUpdated,
     state::{IntegratorPolicy, Marketplace, RoleIdentityConfig},
@@ -14,6 +14,7 @@ pub struct UpdateMarketplaceParams {
     pub max_judge_stake: Option<u64>,
     pub min_arbiter_stake: Option<u64>,
     pub min_jury_fee: Option<u64>,
+    pub provider_cancellation_penalty_pct: Option<u8>,
     pub integrator_policy: Option<IntegratorPolicy>,
     pub kyb_credential: Option<Option<Pubkey>>,
     pub client_requires_kyc: Option<bool>,
@@ -66,6 +67,13 @@ pub fn handler_update_marketplace(
     }
     if let Some(min_jury_fee) = params.min_jury_fee {
         marketplace.min_jury_fee = min_jury_fee;
+    }
+    if let Some(pct) = params.provider_cancellation_penalty_pct {
+        require!(
+            pct <= MAX_PERCENTAGE,
+            PactumCoreError::InvalidMarketplaceConfig
+        );
+        marketplace.provider_cancellation_penalty_pct = pct;
     }
     if let Some(integrator_policy) = params.integrator_policy {
         marketplace.integrator_policy = integrator_policy;

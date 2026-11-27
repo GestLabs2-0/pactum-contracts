@@ -266,6 +266,7 @@ fn init_judge_blocks_base_kyc_bypass_and_requires_judge_credential() {
                 max_judge_stake: 1000,
                 min_arbiter_stake: 500,
                 min_jury_fee: 2_000_000,
+                provider_cancellation_penalty_pct: 10,
             },
         }
         .data(),
