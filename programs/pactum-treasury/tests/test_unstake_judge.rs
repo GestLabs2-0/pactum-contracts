@@ -21,7 +21,7 @@ fn unstake_judge_returns_usdc_when_no_active_disputes() {
 
     let market_pda = common::seed_marketplace(&mut svm, 1, 100_000, 1_000_000, 500_000);
     let judge_vault_pda = common::judge_vault_pda(&market_pda);
-    let (user_main_pda, judge_pda) =
+    let (_user_main_pda, judge_pda) =
         common::seed_judge(&mut svm, &judge_auth.pubkey(), &market_pda, 300_000, 0);
     common::seed_token_account_at(
         &mut svm,
@@ -40,7 +40,6 @@ fn unstake_judge_returns_usdc_when_no_active_disputes() {
         &pactum_treasury::instruction::UnstakeJudge { amount: 300_000 }.data(),
         pactum_treasury::accounts::UnstakeJudge {
             authority: judge_auth.pubkey(),
-            user_main: user_main_pda,
             marketplace: market_pda,
             judge: judge_pda,
             config: treasury_config_pda,
@@ -74,7 +73,7 @@ fn unstake_judge_rejects_when_active_disputes_exist() {
 
     let market_pda = common::seed_marketplace(&mut svm, 1, 100_000, 1_000_000, 500_000);
     let judge_vault_pda = common::judge_vault_pda(&market_pda);
-    let (user_main_pda, judge_pda) =
+    let (_user_main_pda, judge_pda) =
         common::seed_judge(&mut svm, &judge_auth.pubkey(), &market_pda, 300_000, 1);
     common::seed_token_account_at(
         &mut svm,
@@ -92,7 +91,6 @@ fn unstake_judge_rejects_when_active_disputes_exist() {
         &pactum_treasury::instruction::UnstakeJudge { amount: 100_000 }.data(),
         pactum_treasury::accounts::UnstakeJudge {
             authority: judge_auth.pubkey(),
-            user_main: user_main_pda,
             marketplace: market_pda,
             judge: judge_pda,
             config: treasury_config_pda,

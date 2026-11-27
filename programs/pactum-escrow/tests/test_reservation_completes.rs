@@ -36,9 +36,9 @@ fn reservation_completes_at_check_out_and_rejects_early() {
     common::warp_to_ts(&mut svm, now);
 
     let market_pda = common::seed_marketplace(&mut svm, 1);
-    let (client_pda, client_user_main_pda) =
+    let (client_pda, _client_user_main_pda) =
         common::seed_client(&mut svm, market_pda, &client_auth.pubkey());
-    let (provider_pda, provider_user_main_pda) =
+    let (provider_pda, _provider_user_main_pda) =
         common::seed_provider(&mut svm, market_pda, &provider_auth.pubkey());
     let offer_pda = common::seed_offer(
         &mut svm,
@@ -98,9 +98,7 @@ fn reservation_completes_at_check_out_and_rejects_early() {
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
             marketplace: market_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             offer: offer_pda,
             integrator: None,
@@ -123,7 +121,6 @@ fn reservation_completes_at_check_out_and_rejects_early() {
             provider_authority: provider_auth.pubkey(),
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             reservation: reservation_pda,
             escrow_vault: escrow_vault_pda,

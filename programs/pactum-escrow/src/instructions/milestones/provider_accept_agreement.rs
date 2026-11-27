@@ -1,10 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use pactum_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
-use pactum_core::{
-    constants::{PROVIDER_SEED, USER_MAIN_SEED},
-    state::{Provider, UserMainAcc},
-};
+use pactum_core::{constants::PROVIDER_SEED, state::Provider};
 
 use crate::{
     constants::{AGREEMENT_SEED, ESCROW_CONFIG_SEED, ESCROW_VAULT_SEED},
@@ -34,20 +31,14 @@ pub struct ProviderAcceptAgreement<'info> {
     pub global_config: Box<Account<'info, GlobalConfig>>,
 
     #[account(
-        seeds = [USER_MAIN_SEED.as_bytes(), provider_authority.key().as_ref()],
-        bump = provider_user_main.bump,
-        seeds::program = pactum_core::ID,
-    )]
-    pub provider_user_main: Box<Account<'info, UserMainAcc>>,
-
-    #[account(
         seeds = [
             PROVIDER_SEED.as_bytes(),
             provider.marketplace.as_ref(),
-            provider_user_main.key().as_ref(),
+            provider_authority.key().as_ref(),
         ],
         bump = provider.bump,
         seeds::program = pactum_core::ID,
+        constraint = provider.authority == provider_authority.key() @ PactumEscrowError::Unauthorized,
         constraint = !provider.is_banned @ PactumEscrowError::ParticipantBanned,
     )]
     pub provider: Box<Account<'info, Provider>>,

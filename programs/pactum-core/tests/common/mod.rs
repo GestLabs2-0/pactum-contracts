@@ -219,7 +219,7 @@ pub fn create_marketplace_account(
 pub fn create_provider_account(
     svm: &mut LiteSVM,
     market_pda: Pubkey,
-    user_main_pda: Pubkey,
+    _user_main_pda: Pubkey,
     authority: &Keypair,
     payer: &Keypair,
 ) -> Pubkey {
@@ -228,7 +228,7 @@ pub fn create_provider_account(
         &[
             PROVIDER_SEED.as_bytes(),
             market_pda.as_ref(),
-            user_main_pda.as_ref(),
+            authority.pubkey().as_ref(),
         ],
         &core_id,
     );
@@ -240,7 +240,7 @@ pub fn create_provider_account(
         pactum_core::accounts::InitProvider {
             provider: provider_pda,
             marketplace: market_pda,
-            user_main: user_main_pda,
+            user_main: None,
             global_config: global_config_pda,
             marketplace_attestation: None,
             marketplace_credential: None,
@@ -257,7 +257,7 @@ pub fn create_provider_account(
 pub fn create_offer_account(
     svm: &mut LiteSVM,
     provider_pda: Pubkey,
-    user_main_pda: Pubkey,
+    _user_main_pda: Pubkey,
     market_pda: Pubkey,
     offer_id: u32,
     authority: &Keypair,
@@ -285,14 +285,12 @@ pub fn create_offer_account(
                 default_arbiter: None,
                 cancellation_policy: None,
                 content_ref: [1u8; 32],
-                state_hash: [2u8; 32],
             },
         }
         .data(),
         pactum_core::accounts::CreateOffer {
             offer: offer_pda,
             provider: provider_pda,
-            user_main: user_main_pda,
             marketplace: market_pda,
             authority: authority.pubkey(),
             payer: payer.pubkey(),

@@ -4,9 +4,9 @@ use anchor_spl::token_interface::{
 };
 use pactum_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
 use pactum_core::{
-    constants::{JUDGE_SEED, MARKETPLACE_SEED, USER_MAIN_SEED},
+    constants::{JUDGE_SEED, MARKETPLACE_SEED},
     program::PactumCore,
-    state::{Judge, Marketplace, ParticipantRole, UserMainAcc},
+    state::{Judge, Marketplace, ParticipantRole},
 };
 
 use crate::{
@@ -21,14 +21,6 @@ pub struct UnstakeJudge<'info> {
     pub authority: Signer<'info>,
 
     #[account(
-        seeds = [USER_MAIN_SEED.as_bytes(), authority.key().as_ref()],
-        bump = user_main.bump,
-        seeds::program = pactum_core::ID,
-        has_one = authority @ PactumTreasuryError::Unauthorized,
-    )]
-    pub user_main: Box<Account<'info, UserMainAcc>>,
-
-    #[account(
         seeds = [MARKETPLACE_SEED.as_bytes(), marketplace.market_id.to_le_bytes().as_ref()],
         bump = marketplace.bump,
         seeds::program = pactum_core::ID,
@@ -37,11 +29,11 @@ pub struct UnstakeJudge<'info> {
 
     #[account(
         mut,
-        seeds = [JUDGE_SEED.as_bytes(), marketplace.key().as_ref(), user_main.key().as_ref()],
+        seeds = [JUDGE_SEED.as_bytes(), marketplace.key().as_ref(), authority.key().as_ref()],
         bump = judge.bump,
         seeds::program = pactum_core::ID,
         has_one = marketplace,
-        has_one = user_main,
+        has_one = authority @ PactumTreasuryError::Unauthorized,
     )]
     pub judge: Box<Account<'info, Judge>>,
 

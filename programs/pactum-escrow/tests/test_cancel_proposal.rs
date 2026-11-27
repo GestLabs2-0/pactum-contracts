@@ -30,11 +30,11 @@ fn cancel_proposal_by_client_refunds_provider_bond_and_closes_accounts() {
     svm.airdrop(&stranger.pubkey(), 10_000_000_000).unwrap();
 
     let market_pda = common::seed_marketplace(&mut svm, 1);
-    let (client_pda, client_user_main_pda) =
+    let (client_pda, _client_user_main_pda) =
         common::seed_client(&mut svm, market_pda, &client_auth.pubkey());
-    let (provider_pda, provider_user_main_pda) =
+    let (provider_pda, _provider_user_main_pda) =
         common::seed_provider(&mut svm, market_pda, &provider_auth.pubkey());
-    let stranger_user_main_pda = common::seed_user_main(&mut svm, &stranger.pubkey());
+    let _stranger_user_main_pda = common::seed_user_main(&mut svm, &stranger.pubkey());
     let offer_pda = common::seed_offer(
         &mut svm,
         provider_pda,
@@ -83,9 +83,7 @@ fn cancel_proposal_by_client_refunds_provider_bond_and_closes_accounts() {
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
             marketplace: market_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
             offer: offer_pda,
             integrator: None,
@@ -108,8 +106,6 @@ fn cancel_proposal_by_client_refunds_provider_bond_and_closes_accounts() {
             caller: stranger.pubkey(),
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
-            caller_user_main: stranger_user_main_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             client: client_pda,
             agreement: agreement_pda,
@@ -131,8 +127,6 @@ fn cancel_proposal_by_client_refunds_provider_bond_and_closes_accounts() {
             caller: client_auth.pubkey(),
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
-            caller_user_main: client_user_main_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             client: client_pda,
             agreement: agreement_pda,

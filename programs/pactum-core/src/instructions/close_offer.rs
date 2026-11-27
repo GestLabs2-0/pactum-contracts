@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{
     constants::OFFER_SEED,
     error::PactumCoreError,
-    state::{Offer, Provider, UserMainAcc},
+    state::{Offer, Provider},
 };
 
 #[derive(Accounts)]
@@ -21,11 +21,8 @@ pub struct CloseOffer<'info> {
     )]
     pub offer: Account<'info, Offer>,
 
-    #[account(has_one = user_main)]
-    pub provider: Account<'info, Provider>,
-
     #[account(has_one = authority @ PactumCoreError::Unauthorized)]
-    pub user_main: Account<'info, UserMainAcc>,
+    pub provider: Account<'info, Provider>,
 
     pub authority: Signer<'info>,
 

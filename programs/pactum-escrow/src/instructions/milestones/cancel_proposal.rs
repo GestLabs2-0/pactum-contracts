@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use pactum_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
 use pactum_core::{
-    constants::{CLIENT_SEED, PROVIDER_SEED, USER_MAIN_SEED},
-    state::{Client, Provider, UserMainAcc},
+    constants::{CLIENT_SEED, PROVIDER_SEED},
+    state::{Client, Provider},
 };
 
 use crate::{
@@ -33,24 +33,10 @@ pub struct CancelProposal<'info> {
     pub global_config: Box<Account<'info, GlobalConfig>>,
 
     #[account(
-        seeds = [USER_MAIN_SEED.as_bytes(), caller.key().as_ref()],
-        bump = caller_user_main.bump,
-        seeds::program = pactum_core::ID,
-    )]
-    pub caller_user_main: Box<Account<'info, UserMainAcc>>,
-
-    #[account(
-        seeds = [USER_MAIN_SEED.as_bytes(), provider_user_main.authority.as_ref()],
-        bump = provider_user_main.bump,
-        seeds::program = pactum_core::ID,
-    )]
-    pub provider_user_main: Box<Account<'info, UserMainAcc>>,
-
-    #[account(
         seeds = [
             PROVIDER_SEED.as_bytes(),
             provider.marketplace.as_ref(),
-            provider_user_main.key().as_ref(),
+            provider.authority.as_ref(),
         ],
         bump = provider.bump,
         seeds::program = pactum_core::ID,
@@ -61,7 +47,7 @@ pub struct CancelProposal<'info> {
         seeds = [
             CLIENT_SEED.as_bytes(),
             client.marketplace.as_ref(),
-            client.user_main.as_ref(),
+            client.authority.as_ref(),
         ],
         bump = client.bump,
         seeds::program = pactum_core::ID,
@@ -95,7 +81,7 @@ pub struct CancelProposal<'info> {
     #[account(
         mut,
         constraint = provider_token_account.mint == global_config.usdc_mint @ PactumEscrowError::InvalidTokenMint,
-        constraint = provider_token_account.owner == provider_user_main.authority @ PactumEscrowError::Unauthorized,
+        constraint = provider_token_account.owner == provider.authority @ PactumEscrowError::Unauthorized,
     )]
     pub provider_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -112,9 +98,9 @@ pub struct CancelProposal<'info> {
 }
 
 pub fn handler_cancel_proposal(ctx: Context<CancelProposal>) -> Result<()> {
-    let caller_um = ctx.accounts.caller_user_main.key();
+    let caller = ctx.accounts.caller.key();
     require!(
-        caller_um == ctx.accounts.provider.user_main || caller_um == ctx.accounts.client.user_main,
+        caller == ctx.accounts.provider.authority || caller == ctx.accounts.client.authority,
         PactumEscrowError::Unauthorized
     );
 

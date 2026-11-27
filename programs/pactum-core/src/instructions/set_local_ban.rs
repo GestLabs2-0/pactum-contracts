@@ -4,9 +4,7 @@ use crate::{
     constants::{CLIENT_SEED, INTEGRATOR_SEED, JUDGE_SEED, MARKETPLACE_SEED, PROVIDER_SEED},
     error::PactumCoreError,
     events::LocalBanUpdated,
-    state::{
-        Client, IntegratorProfile, Judge, Marketplace, ParticipantRole, Provider, UserMainAcc,
-    },
+    state::{Client, IntegratorProfile, Judge, Marketplace, ParticipantRole, Provider},
 };
 
 #[derive(Accounts)]
@@ -20,32 +18,33 @@ pub struct SetLocalBan<'info> {
 
     pub committee: Signer<'info>,
 
-    pub user_main: Account<'info, UserMainAcc>,
+    /// CHECK: Target participant authority wallet.
+    pub target: UncheckedAccount<'info>,
 
     #[account(
         mut,
-        seeds = [CLIENT_SEED.as_bytes(), marketplace.key().as_ref(), user_main.key().as_ref()],
+        seeds = [CLIENT_SEED.as_bytes(), marketplace.key().as_ref(), target.key().as_ref()],
         bump = client.bump,
     )]
     pub client: Option<Account<'info, Client>>,
 
     #[account(
         mut,
-        seeds = [PROVIDER_SEED.as_bytes(), marketplace.key().as_ref(), user_main.key().as_ref()],
+        seeds = [PROVIDER_SEED.as_bytes(), marketplace.key().as_ref(), target.key().as_ref()],
         bump = provider.bump,
     )]
     pub provider: Option<Account<'info, Provider>>,
 
     #[account(
         mut,
-        seeds = [JUDGE_SEED.as_bytes(), marketplace.key().as_ref(), user_main.key().as_ref()],
+        seeds = [JUDGE_SEED.as_bytes(), marketplace.key().as_ref(), target.key().as_ref()],
         bump = judge.bump,
     )]
     pub judge: Option<Account<'info, Judge>>,
 
     #[account(
         mut,
-        seeds = [INTEGRATOR_SEED.as_bytes(), marketplace.key().as_ref(), user_main.authority.as_ref()],
+        seeds = [INTEGRATOR_SEED.as_bytes(), marketplace.key().as_ref(), target.key().as_ref()],
         bump = integrator.bump,
     )]
     pub integrator: Option<Account<'info, IntegratorProfile>>,
@@ -94,7 +93,7 @@ pub fn handler_set_local_ban(
 
     emit!(LocalBanUpdated {
         marketplace: ctx.accounts.marketplace.key(),
-        user_main: ctx.accounts.user_main.key(),
+        authority: ctx.accounts.target.key(),
         role,
         is_banned: banned,
     });

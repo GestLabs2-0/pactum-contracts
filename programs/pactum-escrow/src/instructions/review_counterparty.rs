@@ -3,7 +3,7 @@ use pactum_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
 use pactum_core::{
     cpi::{accounts::CpiUpdateRoleReview, cpi_update_role_review},
     program::PactumCore,
-    state::{Client, ParticipantRole, Provider, UserMainAcc},
+    state::{Client, ParticipantRole, Provider},
 };
 
 use crate::{
@@ -32,11 +32,6 @@ pub struct ReviewCounterparty<'info> {
     )]
     pub global_config: Box<Account<'info, GlobalConfig>>,
 
-    #[account(
-        constraint = reviewer_user_main.authority == reviewer.key() @ PactumEscrowError::Unauthorized,
-    )]
-    pub reviewer_user_main: Box<Account<'info, UserMainAcc>>,
-
     #[account(mut)]
     pub client: Box<Account<'info, Client>>,
 
@@ -62,9 +57,9 @@ pub fn handler_review_counterparty(ctx: Context<ReviewCounterparty>, rating: u8)
         PactumEscrowError::InvalidRating
     );
 
-    let reviewer_um = ctx.accounts.reviewer_user_main.key();
-    let is_client = reviewer_um == ctx.accounts.client.user_main;
-    let is_provider = reviewer_um == ctx.accounts.provider.user_main;
+    let reviewer = ctx.accounts.reviewer.key();
+    let is_client = reviewer == ctx.accounts.client.authority;
+    let is_provider = reviewer == ctx.accounts.provider.authority;
     require!(is_client || is_provider, PactumEscrowError::Unauthorized);
 
     let target_key = match (&mut ctx.accounts.agreement, &mut ctx.accounts.reservation) {

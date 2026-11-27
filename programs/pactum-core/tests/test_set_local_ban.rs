@@ -23,7 +23,6 @@ fn set_local_ban_by_committee_bans_client() {
     svm.airdrop(&committee.pubkey(), 10_000_000_000).unwrap();
     svm.airdrop(&user.pubkey(), 10_000_000_000).unwrap();
 
-    let user_main_pda = common::create_user_main(&mut svm, &user, &user);
     let market_pda = common::create_marketplace_account(
         &mut svm,
         1,
@@ -36,7 +35,7 @@ fn set_local_ban_by_committee_bans_client() {
         &[
             CLIENT_SEED.as_bytes(),
             market_pda.as_ref(),
-            user_main_pda.as_ref(),
+            user.pubkey().as_ref(),
         ],
         &pactum_core::id(),
     );
@@ -46,7 +45,7 @@ fn set_local_ban_by_committee_bans_client() {
         pactum_core::accounts::InitClient {
             client: client_pda,
             marketplace: market_pda,
-            user_main: user_main_pda,
+            user_main: None,
             authority: user.pubkey(),
             payer: user.pubkey(),
             system_program: system_program::id(),
@@ -65,7 +64,7 @@ fn set_local_ban_by_committee_bans_client() {
         pactum_core::accounts::SetLocalBan {
             marketplace: market_pda,
             committee: committee.pubkey(),
-            user_main: user_main_pda,
+            target: user.pubkey(),
             client: Some(client_pda),
             provider: None,
             judge: None,

@@ -12,7 +12,7 @@ pub struct InitClient<'info> {
         init,
         payer = payer,
         space = 8 + Client::INIT_SPACE,
-        seeds = [CLIENT_SEED.as_bytes(), marketplace.key().as_ref(), user_main.key().as_ref()],
+        seeds = [CLIENT_SEED.as_bytes(), marketplace.key().as_ref(), authority.key().as_ref()],
         bump,
     )]
     pub client: Account<'info, Client>,
@@ -24,7 +24,7 @@ pub struct InitClient<'info> {
         bump = user_main.bump,
         has_one = authority @ PactumCoreError::Unauthorized,
     )]
-    pub user_main: Account<'info, UserMainAcc>,
+    pub user_main: Option<Account<'info, UserMainAcc>>,
 
     pub authority: Signer<'info>,
 
@@ -35,13 +35,14 @@ pub struct InitClient<'info> {
 }
 
 pub fn handler_init_client(ctx: Context<InitClient>) -> Result<()> {
-    ctx.accounts
-        .marketplace
-        .assert_client_eligible(&ctx.accounts.user_main)?;
+    ctx.accounts.marketplace.assert_client_eligible(
+        ctx.accounts.user_main.as_deref(),
+        ctx.accounts.authority.key(),
+    )?;
 
     let client = &mut ctx.accounts.client;
     client.marketplace = ctx.accounts.marketplace.key();
-    client.user_main = ctx.accounts.user_main.key();
+    client.authority = ctx.accounts.authority.key();
     client.is_banned = false;
     client.completed_agreements = 0;
     client.cancelled_agreements = 0;

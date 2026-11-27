@@ -58,7 +58,6 @@ fn update_offer_changes_base_price() {
                 default_arbiter: None,
                 cancellation_policy: None,
                 content_ref: None,
-                state_hash: None,
                 is_active: None,
             },
         }
@@ -66,7 +65,6 @@ fn update_offer_changes_base_price() {
         pactum_core::accounts::UpdateOffer {
             offer: offer_pda,
             provider: provider_pda,
-            user_main: user_main_pda,
             authority: provider_auth.pubkey(),
         }
         .to_account_metas(None),
@@ -126,7 +124,6 @@ fn update_offer_updates_cancellation_policy_and_rejects_pct_over_100() {
                 default_arbiter: None,
                 cancellation_policy: Some(Some(policy)),
                 content_ref: None,
-                state_hash: None,
                 is_active: None,
             },
         }
@@ -134,7 +131,6 @@ fn update_offer_updates_cancellation_policy_and_rejects_pct_over_100() {
         pactum_core::accounts::UpdateOffer {
             offer: offer_pda,
             provider: provider_pda,
-            user_main: user_main_pda,
             authority: provider_auth.pubkey(),
         }
         .to_account_metas(None),
@@ -158,7 +154,6 @@ fn update_offer_updates_cancellation_policy_and_rejects_pct_over_100() {
                     client_refund_pct: 101,
                 })),
                 content_ref: None,
-                state_hash: None,
                 is_active: None,
             },
         }
@@ -166,7 +161,6 @@ fn update_offer_updates_cancellation_policy_and_rejects_pct_over_100() {
         pactum_core::accounts::UpdateOffer {
             offer: offer_pda,
             provider: provider_pda,
-            user_main: user_main_pda,
             authority: provider_auth.pubkey(),
         }
         .to_account_metas(None),

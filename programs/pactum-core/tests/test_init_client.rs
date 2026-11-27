@@ -39,7 +39,7 @@ fn init_client_requires_sas_when_marketplace_requires_identity() {
         &[
             CLIENT_SEED.as_bytes(),
             market_pda.as_ref(),
-            user_main_pda.as_ref(),
+            user.pubkey().as_ref(),
         ],
         &pactum_core::id(),
     );
@@ -50,7 +50,7 @@ fn init_client_requires_sas_when_marketplace_requires_identity() {
         pactum_core::accounts::InitClient {
             client: client_pda,
             marketplace: market_pda,
-            user_main: user_main_pda,
+            user_main: Some(user_main_pda),
             authority: user.pubkey(),
             payer: payer.pubkey(),
             system_program: system_program::id(),
@@ -145,7 +145,7 @@ fn init_client_succeeds_after_linking_sas() {
         &[
             CLIENT_SEED.as_bytes(),
             market_pda.as_ref(),
-            user_main_pda.as_ref(),
+            user.pubkey().as_ref(),
         ],
         &pactum_core::id(),
     );
@@ -155,7 +155,7 @@ fn init_client_succeeds_after_linking_sas() {
         pactum_core::accounts::InitClient {
             client: client_pda,
             marketplace: market_pda,
-            user_main: user_main_pda,
+            user_main: Some(user_main_pda),
             authority: user.pubkey(),
             payer: user.pubkey(),
             system_program: system_program::id(),

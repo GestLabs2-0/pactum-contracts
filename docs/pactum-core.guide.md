@@ -58,10 +58,10 @@ flowchart TD
 | `UserMainAcc` | `["user_main", authority]` | `authority`, `sas_attestation: Option<Pubkey>`, `bump` |
 | `Identity` | `["identity", id_hash]` | `authority`, `verified_at`, `linked`, `bump` *(ancla de unicidad anti-Sybil por hash KYC/KYB)* |
 | `Marketplace` | `["marketplace", market_id]` | `market_id`, `name`, `committee`, `dispute_mode`, `storage_backend`, `integrator_policy`, `kyb_credential`, `client_requires_kyc`, `provider_identity`, `judge_identity`, `min_judge_stake`, `max_judge_stake`, `min_arbiter_stake`, `min_jury_fee`, `pool_count`, `is_active`, `bump` |
-| `Client` | `["client", marketplace, user_main]` | `marketplace`, `user_main`, `is_banned`, `completed_agreements`, `cancelled_agreements`, `disputes_won`, `disputes_lost`, `total_reviews`, `total_score`, `bump` |
-| `Provider` | `["provider", marketplace, user_main]` | `marketplace`, `user_main`, `is_banned`, `offer_count`, `completed_agreements`, `cancelled_agreements`, `disputes_won`, `disputes_lost`, `total_reviews`, `total_score`, `bump` |
-| `Judge` | `["judge", marketplace, user_main]` | `marketplace`, `user_main`, `staked_amount`, `pool_id`, `leaf_index`, `is_active_in_pool`, `active_disputes`, `cases_voted`, `cases_in_consensus`, `is_banned`, `bump` |
-| `Offer` | `["offer", provider, offer_id]` | `offer_id`, `base_price`, `pricing_type`, `approval_window_secs`, `provider_bond`, `required_client_bond`, `jury_fee`, `default_arbiter`, `content_ref`, `state_hash`, `is_active`, `rent_payer`, `bump` |
+| `Client` | `["client", marketplace, authority]` | `marketplace`, `authority`, `is_banned`, `completed_agreements`, `cancelled_agreements`, `disputes_won`, `disputes_lost`, `total_reviews`, `total_score`, `bump` |
+| `Provider` | `["provider", marketplace, authority]` | `marketplace`, `authority`, `is_banned`, `offer_count`, `completed_agreements`, `cancelled_agreements`, `disputes_won`, `disputes_lost`, `total_reviews`, `total_score`, `bump` |
+| `Judge` | `["judge", marketplace, authority]` | `marketplace`, `authority`, `staked_amount`, `pool_id`, `leaf_index`, `is_active_in_pool`, `active_disputes`, `cases_voted`, `cases_in_consensus`, `is_banned`, `bump` |
+| `Offer` | `["offer", provider, offer_id]` | `offer_id`, `base_price`, `pricing_type`, `approval_window_secs`, `provider_bond`, `required_client_bond`, `jury_fee`, `default_arbiter`, `content_ref`, `is_active`, `rent_payer`, `bump` |
 | `ArbiterApplication` | `["arbiter_app", marketplace, authority]` | `marketplace`, `authority`, `sas_kyb_attestation`, `arbiter_fee`, `sla_secs`, `rent_payer`, `bump` |
 | `ArbiterProfile` | `["arbiter", marketplace, authority]` | `marketplace`, `authority`, `sas_kyb_attestation`, `arbiter_fee`, `staked_amount`, `sla_secs`, `active_disputes`, `cases_resolved`, `is_active`, `bump` |
 | `IntegratorApplication` | `["integrator_app", marketplace, authority]` | `marketplace`, `authority`, `sas_kyb_attestation`, `default_fee_bps`, `rent_payer`, `bump` |
@@ -79,12 +79,12 @@ flowchart TD
 | | `unlink_sas_identity` | `authority` | Desvincula `sas_attestation` solo si fue cerrada o expiró en SAS, conservando `Identity(id_hash)` para evitar re-registro en otra wallet |
 | **Mercados / Roles** | `create_marketplace(market_id, params)` | `payer` *(permissionless)* | Crea un `Marketplace` sin dueño con su `committee`, `dispute_mode`, `storage_backend`, `kyb_credential` opcional y mínimos de *stake*/*fee* |
 | | `update_marketplace(params)` | `marketplace.committee` | Permite al comité (o gobernanza DAO futura) ajustar límites de *stake* (`min/max_judge_stake`, `min_arbiter_stake`), `min_jury_fee`, `kyb_credential`, `requires_identity`, `is_active` o rotar `committee` |
-| | `init_client` | `authority`, `payer` | Registra el perfil `Client` en un `Marketplace` (exige mercado activo y SAS si `client_requires_kyc == true`) |
-| | `init_provider` | `authority`, `payer` | Registra el perfil `Provider` en un `Marketplace` para publicar ofertas (exige mercado activo y SAS si `provider_identity` lo requiere) |
-| | `init_judge` | `authority`, `payer` | Registra el perfil `Judge` para jurados en un `Marketplace` (rechaza mercados `ArbiterOnly`) |
+| | `init_client` | `authority`, `payer` | Registra el perfil `Client` en un `Marketplace` (`user_main` opcional; exige SAS si `client_requires_kyc == true`) |
+| | `init_provider` | `authority`, `payer` | Registra el perfil `Provider` en un `Marketplace` para publicar ofertas (`user_main` opcional; exige SAS si `provider_identity` lo requiere) |
+| | `init_judge` | `authority`, `payer` | Registra el perfil `Judge` para jurados en un `Marketplace` (`user_main` opcional; rechaza mercados `ArbiterOnly`) |
 | | `set_local_ban(role, banned)` | `marketplace.committee` | Veta o rehabilita localmente un `Client`, `Provider` o `Judge` dentro de un `Marketplace` |
 | **Ofertas** | `create_offer(params)` | `authority`, `payer` | Publica una `Offer` reutilizable (fija `offer_id`, incrementa `provider.offer_count` y guarda `rent_payer`) |
-| | `update_offer(params)` | `authority` | Actualiza precio base, *bonds*, `default_arbiter`, `content_ref`, `state_hash` o visibilidad (`is_active`) |
+| | `update_offer(params)` | `authority` | Actualiza precio base, *bonds*, `default_arbiter`, `content_ref` o visibilidad (`is_active`) |
 | | `close_offer` | `authority` | Cierra una `Offer` y devuelve el 100 % de la renta únicamente a `offer.rent_payer` |
 | **Árbitros B2B** | `apply_as_arbiter(arbiter_fee, sla_secs, id_hash)` | `authority`, `payer` | Valida *attestation* KYB contra `marketplace.kyb_credential` (o `global_config.sas_credential`), ancla `Identity(id_hash)` con `init_if_needed` (permite misma wallet en varios mercados) y crea `ArbiterApplication` |
 | | `review_arbiter_application(approve)` | `marketplace.committee` | Aprueba (crea `ArbiterProfile`) o rechaza la solicitud; en ambos casos cierra `ArbiterApplication` devolviendo la renta a `rent_payer` |

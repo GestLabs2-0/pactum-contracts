@@ -30,9 +30,9 @@ fn approve_milestone_loops_and_settles_final_milestone_with_fees_bonds_and_outco
     common::warp_to_ts(&mut svm, 1_000_000);
 
     let market_pda = common::seed_marketplace(&mut svm, 1);
-    let (client_pda, client_user_main_pda) =
+    let (client_pda, _client_user_main_pda) =
         common::seed_client(&mut svm, market_pda, &client_auth.pubkey());
-    let (provider_pda, provider_user_main_pda) =
+    let (provider_pda, _provider_user_main_pda) =
         common::seed_provider(&mut svm, market_pda, &provider_auth.pubkey());
     let offer_pda = common::seed_offer(
         &mut svm,
@@ -87,9 +87,7 @@ fn approve_milestone_loops_and_settles_final_milestone_with_fees_bonds_and_outco
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
             marketplace: market_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
             offer: offer_pda,
             integrator: None,
@@ -115,7 +113,6 @@ fn approve_milestone_loops_and_settles_final_milestone_with_fees_bonds_and_outco
             client_authority: client_auth.pubkey(),
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
             agreement: agreement_pda,
             escrow_vault: escrow_vault_pda,
@@ -136,7 +133,6 @@ fn approve_milestone_loops_and_settles_final_milestone_with_fees_bonds_and_outco
         .data(),
         pactum_escrow::accounts::SubmitMilestone {
             provider_authority: provider_auth.pubkey(),
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             agreement: agreement_pda,
         }
@@ -151,9 +147,7 @@ fn approve_milestone_loops_and_settles_final_milestone_with_fees_bonds_and_outco
             client_authority: client_auth.pubkey(),
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             integrator: None,
             agreement: agreement_pda,
@@ -189,7 +183,6 @@ fn approve_milestone_loops_and_settles_final_milestone_with_fees_bonds_and_outco
         .data(),
         pactum_escrow::accounts::SubmitMilestone {
             provider_authority: provider_auth.pubkey(),
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             agreement: agreement_pda,
         }
@@ -204,9 +197,7 @@ fn approve_milestone_loops_and_settles_final_milestone_with_fees_bonds_and_outco
             client_authority: client_auth.pubkey(),
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             integrator: None,
             agreement: agreement_pda,

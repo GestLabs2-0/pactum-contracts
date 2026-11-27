@@ -51,7 +51,6 @@ fn close_offer_rejects_wrong_rent_payer() {
         pactum_core::accounts::CloseOffer {
             offer: offer_pda,
             provider: provider_pda,
-            user_main: user_main_pda,
             authority: provider_auth.pubkey(),
             rent_payer: provider_auth.pubkey(),
         }
@@ -103,7 +102,6 @@ fn close_offer_refunds_lamports_to_original_rent_payer() {
         pactum_core::accounts::CloseOffer {
             offer: offer_pda,
             provider: provider_pda,
-            user_main: user_main_pda,
             authority: provider_auth.pubkey(),
             rent_payer: relayer.pubkey(),
         }

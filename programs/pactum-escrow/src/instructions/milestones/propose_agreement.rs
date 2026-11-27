@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use pactum_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
 use pactum_core::{
-    constants::{CLIENT_SEED, MARKETPLACE_SEED, OFFER_SEED, PROVIDER_SEED, USER_MAIN_SEED},
-    state::{Client, IntegratorProfile, Marketplace, Offer, PricingType, Provider, UserMainAcc},
+    constants::{CLIENT_SEED, MARKETPLACE_SEED, OFFER_SEED, PROVIDER_SEED},
+    state::{Client, IntegratorProfile, Marketplace, Offer, PricingType, Provider},
 };
 
 use crate::{
@@ -55,29 +55,16 @@ pub struct ProposeAgreement<'info> {
     pub marketplace: Box<Account<'info, Marketplace>>,
 
     #[account(
-        seeds = [USER_MAIN_SEED.as_bytes(), provider_authority.key().as_ref()],
-        bump = provider_user_main.bump,
-        seeds::program = pactum_core::ID,
-    )]
-    pub provider_user_main: Box<Account<'info, UserMainAcc>>,
-
-    #[account(
-        seeds = [PROVIDER_SEED.as_bytes(), marketplace.key().as_ref(), provider_user_main.key().as_ref()],
+        seeds = [PROVIDER_SEED.as_bytes(), marketplace.key().as_ref(), provider_authority.key().as_ref()],
         bump = provider.bump,
         seeds::program = pactum_core::ID,
+        constraint = provider.authority == provider_authority.key() @ PactumEscrowError::Unauthorized,
         constraint = !provider.is_banned @ PactumEscrowError::ParticipantBanned,
     )]
     pub provider: Box<Account<'info, Provider>>,
 
     #[account(
-        seeds = [USER_MAIN_SEED.as_bytes(), client_user_main.authority.as_ref()],
-        bump = client_user_main.bump,
-        seeds::program = pactum_core::ID,
-    )]
-    pub client_user_main: Box<Account<'info, UserMainAcc>>,
-
-    #[account(
-        seeds = [CLIENT_SEED.as_bytes(), marketplace.key().as_ref(), client_user_main.key().as_ref()],
+        seeds = [CLIENT_SEED.as_bytes(), marketplace.key().as_ref(), client.authority.as_ref()],
         bump = client.bump,
         seeds::program = pactum_core::ID,
         constraint = !client.is_banned @ PactumEscrowError::ParticipantBanned,
@@ -194,7 +181,7 @@ pub fn handler_propose_agreement(
     agreement.submitted_at = 0;
     agreement.completed_at = 0;
     agreement.deliverable_hash = [0u8; 32];
-    agreement.state_hash = offer.state_hash;
+    agreement.content_ref = offer.content_ref;
     agreement.deal_contract_hash = params.deal_contract_hash;
     agreement.status = AgreementStatus::Proposed;
     agreement.previous_status = None;

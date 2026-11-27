@@ -37,9 +37,9 @@ fn release_reservation_funds_settles_after_24h_and_rejects_early() {
     common::warp_to_ts(&mut svm, now);
 
     let market_pda = common::seed_marketplace(&mut svm, 1);
-    let (client_pda, client_user_main_pda) =
+    let (client_pda, _client_user_main_pda) =
         common::seed_client(&mut svm, market_pda, &client_auth.pubkey());
-    let (provider_pda, provider_user_main_pda) =
+    let (provider_pda, _provider_user_main_pda) =
         common::seed_provider(&mut svm, market_pda, &provider_auth.pubkey());
     let offer_pda = common::seed_offer(
         &mut svm,
@@ -101,9 +101,7 @@ fn release_reservation_funds_settles_after_24h_and_rejects_early() {
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
             marketplace: market_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             offer: offer_pda,
             integrator: None,
@@ -126,7 +124,6 @@ fn release_reservation_funds_settles_after_24h_and_rejects_early() {
             provider_authority: provider_auth.pubkey(),
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             reservation: reservation_pda,
             escrow_vault: escrow_vault_pda,
@@ -170,9 +167,7 @@ fn release_reservation_funds_settles_after_24h_and_rejects_early() {
             caller: crank.pubkey(),
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             integrator: None,
             reservation: reservation_pda,
@@ -200,9 +195,7 @@ fn release_reservation_funds_settles_after_24h_and_rejects_early() {
             caller: crank.pubkey(),
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             integrator: None,
             reservation: reservation_pda,

@@ -1,10 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use pactum_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
-use pactum_core::{
-    constants::{CLIENT_SEED, USER_MAIN_SEED},
-    state::{Client, UserMainAcc},
-};
+use pactum_core::{constants::CLIENT_SEED, state::Client};
 
 use crate::{
     constants::{ACCEPT_WINDOW_SECS, AGREEMENT_SEED, ESCROW_CONFIG_SEED, ESCROW_VAULT_SEED},
@@ -33,17 +30,10 @@ pub struct ExpireAgreement<'info> {
     pub global_config: Box<Account<'info, GlobalConfig>>,
 
     #[account(
-        seeds = [USER_MAIN_SEED.as_bytes(), client_user_main.authority.as_ref()],
-        bump = client_user_main.bump,
-        seeds::program = pactum_core::ID,
-    )]
-    pub client_user_main: Box<Account<'info, UserMainAcc>>,
-
-    #[account(
         seeds = [
             CLIENT_SEED.as_bytes(),
             client.marketplace.as_ref(),
-            client_user_main.key().as_ref(),
+            client.authority.as_ref(),
         ],
         bump = client.bump,
         seeds::program = pactum_core::ID,
@@ -76,7 +66,7 @@ pub struct ExpireAgreement<'info> {
     #[account(
         mut,
         constraint = client_token_account.mint == global_config.usdc_mint @ PactumEscrowError::InvalidTokenMint,
-        constraint = client_token_account.owner == client_user_main.authority @ PactumEscrowError::Unauthorized,
+        constraint = client_token_account.owner == client.authority @ PactumEscrowError::Unauthorized,
     )]
     pub client_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 

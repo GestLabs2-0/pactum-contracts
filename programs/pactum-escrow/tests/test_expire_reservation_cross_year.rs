@@ -35,9 +35,9 @@ fn expire_reservation_cross_year_releases_both_years_and_refunds() {
     common::warp_to_ts(&mut svm, now);
 
     let market_pda = common::seed_marketplace(&mut svm, 1);
-    let (client_pda, client_user_main_pda) =
+    let (client_pda, _client_user_main_pda) =
         common::seed_client(&mut svm, market_pda, &client_auth.pubkey());
-    let (provider_pda, provider_user_main_pda) =
+    let (provider_pda, _provider_user_main_pda) =
         common::seed_provider(&mut svm, market_pda, &provider_auth.pubkey());
     let offer_pda = common::seed_offer(
         &mut svm,
@@ -105,9 +105,7 @@ fn expire_reservation_cross_year_releases_both_years_and_refunds() {
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
             marketplace: market_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             offer: offer_pda,
             integrator: None,
@@ -132,7 +130,6 @@ fn expire_reservation_cross_year_releases_both_years_and_refunds() {
             caller: crank.pubkey(),
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
             booking_days: booking_days_pda,
             booking_days_next: booking_days_next_pda,
