@@ -5,12 +5,17 @@ use anchor_spl::token_interface::{
 };
 
 use crate::{
-    constants::{BPS_DENOMINATOR, ESCROW_VAULT_SEED, SECONDS_PER_DAY},
+    constants::{BPS_DENOMINATOR, CPI_AUTHORITY_SEED, ESCROW_VAULT_SEED, SECONDS_PER_DAY},
     error::PactumEscrowError,
-    events::AgreementCancelled,
-    state::{Agreement, BookingDays},
+    events::{AgreementCancelled, AgreementCompleted, MilestoneReleased},
+    state::{Agreement, AgreementStatus, BookingDays},
 };
-use pactum_core::state::IntegratorProfile;
+use pactum_config::GlobalConfig;
+use pactum_core::{
+    cpi::{accounts::CpiRecordAgreementOutcome, cpi_record_agreement_outcome},
+    program::PactumCore,
+    state::{AgreementOutcome, Client, IntegratorProfile, ParticipantRole, Provider},
+};
 
 /// Refunds `total_amount + client_bond` to `client_token_account`, closes `escrow_vault` to
 /// `rent_payer`, and emits `AgreementCancelled`.
@@ -89,6 +94,236 @@ pub fn refund_and_close_proposed_agreement<'info>(
     emit!(AgreementCancelled {
         agreement: agreement.key(),
         reason: reason.to_string(),
+    });
+    Ok(())
+}
+
+/// Transfers `integrator_fee` from `escrow_vault` to `integrator_token_account` when `integrator_fee > 0`.
+#[allow(clippy::too_many_arguments)]
+pub fn pay_integrator_if_needed<'info>(
+    expected_integrator: Option<Pubkey>,
+    integrator_fee: u64,
+    integrator: &Option<Box<Account<'info, IntegratorProfile>>>,
+    integrator_token_account: &Option<Box<InterfaceAccount<'info, TokenAccount>>>,
+    escrow_vault: &InterfaceAccount<'info, TokenAccount>,
+    usdc_mint: &InterfaceAccount<'info, Mint>,
+    token_program: &Interface<'info, TokenInterface>,
+    usdc_mint_key: Pubkey,
+    agreement_key: Pubkey,
+    vault_bump: u8,
+) -> Result<()> {
+    if integrator_fee == 0 {
+        return Ok(());
+    }
+    let expected_key = expected_integrator.ok_or(PactumEscrowError::InvalidIntegratorAccount)?;
+    let int_profile = integrator
+        .as_ref()
+        .ok_or(PactumEscrowError::InvalidIntegratorAccount)?;
+    require!(
+        int_profile.key() == expected_key,
+        PactumEscrowError::InvalidIntegratorAccount
+    );
+    let int_ta = integrator_token_account
+        .as_ref()
+        .ok_or(PactumEscrowError::InvalidIntegratorAccount)?;
+    require!(
+        int_ta.mint == usdc_mint_key,
+        PactumEscrowError::InvalidTokenMint
+    );
+    require!(
+        int_ta.owner == int_profile.authority,
+        PactumEscrowError::InvalidIntegratorAccount
+    );
+
+    transfer_from_vault(
+        token_program,
+        escrow_vault,
+        int_ta,
+        usdc_mint,
+        agreement_key,
+        vault_bump,
+        integrator_fee,
+    )
+}
+
+/// Records `outcome` for both `Client` and `Provider` via CPI into `pactum-core`.
+#[allow(clippy::too_many_arguments)]
+pub fn cpi_record_outcomes<'info>(
+    core_program: &Program<'info, PactumCore>,
+    client: &Account<'info, Client>,
+    provider: &Account<'info, Provider>,
+    global_config: &Account<'info, GlobalConfig>,
+    cpi_authority: &AccountInfo<'info>,
+    cpi_authority_bump: u8,
+    outcome: AgreementOutcome,
+) -> Result<()> {
+    let seeds: &[&[u8]] = &[CPI_AUTHORITY_SEED.as_bytes(), &[cpi_authority_bump]];
+    let signer = &[seeds];
+
+    let client_ctx = CpiContext::new_with_signer(
+        core_program.key(),
+        CpiRecordAgreementOutcome {
+            client: Some(client.to_account_info()),
+            provider: None,
+            global_config: global_config.to_account_info(),
+            cpi_authority: cpi_authority.clone(),
+        },
+        signer,
+    );
+    cpi_record_agreement_outcome(client_ctx, ParticipantRole::Client, outcome)?;
+
+    let provider_ctx = CpiContext::new_with_signer(
+        core_program.key(),
+        CpiRecordAgreementOutcome {
+            client: None,
+            provider: Some(provider.to_account_info()),
+            global_config: global_config.to_account_info(),
+            cpi_authority: cpi_authority.clone(),
+        },
+        signer,
+    );
+    cpi_record_agreement_outcome(provider_ctx, ParticipantRole::Provider, outcome)
+}
+
+/// Releases the current milestone (used by `approve_milestone` and `claim_milestone`).
+#[allow(clippy::too_many_arguments)]
+pub fn release_current_milestone<'info>(
+    agreement: &mut Account<'info, Agreement>,
+    global_config: &Account<'info, GlobalConfig>,
+    client: &Account<'info, Client>,
+    provider: &Account<'info, Provider>,
+    integrator: &Option<Box<Account<'info, IntegratorProfile>>>,
+    escrow_vault: &InterfaceAccount<'info, TokenAccount>,
+    platform_vault: &InterfaceAccount<'info, TokenAccount>,
+    provider_token_account: &InterfaceAccount<'info, TokenAccount>,
+    client_token_account: &InterfaceAccount<'info, TokenAccount>,
+    integrator_token_account: &Option<Box<InterfaceAccount<'info, TokenAccount>>>,
+    usdc_mint: &InterfaceAccount<'info, Mint>,
+    rent_payer: &AccountInfo<'info>,
+    cpi_authority: &AccountInfo<'info>,
+    cpi_authority_bump: u8,
+    core_program: &Program<'info, PactumCore>,
+    token_program: &Interface<'info, TokenInterface>,
+) -> Result<()> {
+    let idx = usize::from(agreement.completed_milestones);
+    let amount = *agreement
+        .milestone_amounts
+        .get(idx)
+        .ok_or(PactumEscrowError::InvalidMilestones)?;
+    let fees = calculate_fees(
+        amount,
+        global_config.protocol_fee_bps,
+        global_config.max_protocol_fee,
+        agreement.integrator.is_some(),
+        agreement.integrator_fee_bps,
+    )?;
+
+    let agreement_key = agreement.key();
+    let vault_bump = agreement.escrow_vault_bump;
+
+    transfer_from_vault(
+        token_program,
+        escrow_vault,
+        platform_vault,
+        usdc_mint,
+        agreement_key,
+        vault_bump,
+        fees.protocol_fee,
+    )?;
+    pay_integrator_if_needed(
+        agreement.integrator,
+        fees.integrator_fee,
+        integrator,
+        integrator_token_account,
+        escrow_vault,
+        usdc_mint,
+        token_program,
+        global_config.usdc_mint,
+        agreement_key,
+        vault_bump,
+    )?;
+    transfer_from_vault(
+        token_program,
+        escrow_vault,
+        provider_token_account,
+        usdc_mint,
+        agreement_key,
+        vault_bump,
+        fees.provider_payout,
+    )?;
+
+    agreement.released_amount = agreement
+        .released_amount
+        .checked_add(amount)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    let released_index = agreement.completed_milestones;
+    agreement.completed_milestones = agreement
+        .completed_milestones
+        .checked_add(1)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+
+    emit!(MilestoneReleased {
+        agreement: agreement_key,
+        milestone_index: released_index,
+        amount,
+        protocol_fee: fees.protocol_fee,
+        integrator_fee: fees.integrator_fee,
+        provider_payout: fees.provider_payout,
+    });
+
+    if usize::from(agreement.completed_milestones) < agreement.milestone_amounts.len() {
+        agreement.status = AgreementStatus::Funded;
+        agreement.current_deadline_ts = agreement
+            .current_deadline_ts
+            .checked_add(agreement.step_duration_secs)
+            .ok_or(PactumEscrowError::MathOverflow)?;
+        return Ok(());
+    }
+
+    // Final milestone settlement: return bonds, close vault, record outcomes.
+    transfer_from_vault(
+        token_program,
+        escrow_vault,
+        provider_token_account,
+        usdc_mint,
+        agreement_key,
+        vault_bump,
+        agreement.provider_bond,
+    )?;
+    transfer_from_vault(
+        token_program,
+        escrow_vault,
+        client_token_account,
+        usdc_mint,
+        agreement_key,
+        vault_bump,
+        agreement.client_bond,
+    )?;
+    close_vault(
+        token_program,
+        escrow_vault,
+        rent_payer,
+        agreement_key,
+        vault_bump,
+    )?;
+
+    let now = Clock::get()?.unix_timestamp;
+    agreement.status = AgreementStatus::Completed;
+    agreement.completed_at = now;
+
+    cpi_record_outcomes(
+        core_program,
+        client,
+        provider,
+        global_config,
+        cpi_authority,
+        cpi_authority_bump,
+        AgreementOutcome::Completed,
+    )?;
+
+    emit!(AgreementCompleted {
+        agreement: agreement_key,
+        completed_at: now,
     });
     Ok(())
 }

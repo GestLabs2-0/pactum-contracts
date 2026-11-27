@@ -107,9 +107,12 @@ pub fn send_ix(
     let blockhash = svm.latest_blockhash();
     let msg = Message::new_with_blockhash(&[ix], Some(&payer.pubkey()), &blockhash);
     let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), signers).unwrap();
-    svm.send_transaction(tx)
+    let res = svm
+        .send_transaction(tx)
         .map(|_| ())
-        .map_err(|e| format!("{e:?}"))
+        .map_err(|e| format!("{e:?}"));
+    svm.expire_blockhash();
+    res
 }
 
 pub fn warp_to_ts(svm: &mut LiteSVM, unix_timestamp: i64) {

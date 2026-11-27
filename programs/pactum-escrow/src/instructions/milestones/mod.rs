@@ -1,3 +1,4 @@
+pub mod approve_milestone;
 pub mod cancel_proposal;
 pub mod create_fixed_agreement;
 pub mod expire_agreement;
@@ -8,6 +9,7 @@ pub mod provider_accept_agreement;
 pub mod provider_reject_agreement;
 pub mod submit_milestone;
 
+pub use approve_milestone::*;
 pub use cancel_proposal::*;
 pub use create_fixed_agreement::*;
 pub use expire_agreement::*;

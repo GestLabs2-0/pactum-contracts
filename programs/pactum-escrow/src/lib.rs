@@ -74,4 +74,8 @@ pub mod pactum_escrow {
     ) -> Result<()> {
         handler_submit_milestone(ctx, deliverable_hash)
     }
+
+    pub fn approve_milestone(ctx: Context<ApproveMilestone>) -> Result<()> {
+        handler_approve_milestone(ctx)
+    }
 }
