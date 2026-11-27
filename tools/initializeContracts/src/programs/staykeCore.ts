@@ -1,4 +1,5 @@
 import {
+  fetchMaybeConfigAcc,
   findConfigPda,
   getInitializeConfigInstructionAsync,
 } from "@GestLabs2-0/stayke-core";
@@ -21,9 +22,15 @@ import { confirmTx } from "../utils";
 export async function initializeConfig(
   connection: SolanaRpcType,
   payer: KeyPairSigner,
-  //   args: any
 ) {
   const configPda = await findConfigPda();
+
+  const existing = await fetchMaybeConfigAcc(connection, configPda[0]);
+  if (existing.exists) {
+    throw new Error(
+      `ConfigAcc already exists at ${configPda[0]}. Core config is already initialized.`,
+    );
+  }
 
   const instruction = await getInitializeConfigInstructionAsync({
     authority: payer,
