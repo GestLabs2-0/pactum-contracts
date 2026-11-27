@@ -188,6 +188,7 @@ pub fn handler_create_fixed_agreement(
     agreement.step_duration_secs = params.step_duration_secs;
     agreement.current_deadline_ts = 0;
     agreement.approval_window_secs = offer.approval_window_secs;
+    agreement.created_at = Clock::get()?.unix_timestamp;
     agreement.submitted_at = 0;
     agreement.completed_at = 0;
     agreement.deliverable_hash = [0u8; 32];

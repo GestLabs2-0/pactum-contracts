@@ -37,4 +37,8 @@ pub mod pactum_escrow {
     ) -> Result<()> {
         handler_provider_accept_agreement(ctx, expected_contract_hash)
     }
+
+    pub fn provider_reject_agreement(ctx: Context<ProviderRejectAgreement>) -> Result<()> {
+        handler_provider_reject_agreement(ctx)
+    }
 }

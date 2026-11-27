@@ -32,6 +32,7 @@ pub struct Agreement {
     pub step_duration_secs: i64,
     pub current_deadline_ts: i64,
     pub approval_window_secs: i64,
+    pub created_at: i64,
     pub submitted_at: i64,
     pub completed_at: i64,
     pub deliverable_hash: [u8; 32],
@@ -67,6 +68,7 @@ impl Agreement {
         + 8 // step_duration_secs
         + 8 // current_deadline_ts
         + 8 // approval_window_secs
+        + 8 // created_at
         + 8 // submitted_at
         + 8 // completed_at
         + 32 // deliverable_hash
