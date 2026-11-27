@@ -78,4 +78,8 @@ pub mod pactum_escrow {
     pub fn approve_milestone(ctx: Context<ApproveMilestone>) -> Result<()> {
         handler_approve_milestone(ctx)
     }
+
+    pub fn claim_milestone(ctx: Context<ClaimMilestone>) -> Result<()> {
+        handler_claim_milestone(ctx)
+    }
 }
