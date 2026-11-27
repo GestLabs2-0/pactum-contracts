@@ -1,1 +1,3 @@
-// Instruction modules will be added commit-by-commit.
+pub mod admin;
+
+pub use admin::*;

@@ -1,6 +1,12 @@
 use anchor_lang::prelude::*;
 
 #[event]
+pub struct EscrowInitialized {
+    pub authority: Pubkey,
+    pub global_config: Pubkey,
+}
+
+#[event]
 pub struct AgreementCreated {
     pub agreement: Pubkey,
     pub offer: Pubkey,

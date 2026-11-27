@@ -6,6 +6,10 @@ pub enum PactumEscrowError {
     #[msg("Unauthorized: caller does not have permission to perform this action")]
     Unauthorized,
 
+    /// EscrowConfig PDA has already been initialized.
+    #[msg("EscrowConfig is already initialized")]
+    AlreadyInitialized,
+
     /// EscrowConfig PDA has not been initialized.
     #[msg("EscrowConfig is not initialized")]
     EscrowNotInitialized,
