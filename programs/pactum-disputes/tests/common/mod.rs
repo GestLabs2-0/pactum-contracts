@@ -630,11 +630,13 @@ pub fn seed_agreement_with_vault(
         escrow_vault_bump: vault_bump,
         bump,
     };
+    let mut ag_data = serialize_account(&ag);
+    ag_data.resize(Agreement::space(ag.milestone_amounts.len()), 0);
     svm.set_account(
         agreement_pda,
         Account {
             lamports: 1_000_000_000,
-            data: serialize_account(&ag),
+            data: ag_data,
             owner: pactum_escrow::id(),
             executable: false,
             rent_epoch: 0,

@@ -34,4 +34,12 @@ pub mod pactum_disputes {
     ) -> Result<()> {
         handler_update_dispute_config(ctx, params)
     }
+
+    pub fn open_dispute(ctx: Context<OpenDispute>) -> Result<()> {
+        handler_open_dispute(ctx)
+    }
+
+    pub fn link_evidence(ctx: Context<LinkEvidence>, evidence_hash: [u8; 32]) -> Result<()> {
+        handler_link_evidence(ctx, evidence_hash)
+    }
 }
