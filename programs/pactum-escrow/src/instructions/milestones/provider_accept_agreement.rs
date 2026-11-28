@@ -88,14 +88,18 @@ pub fn handler_provider_accept_agreement(
         PactumEscrowError::InvalidContractHash
     );
 
-    if agreement.provider_bond > 0 {
+    let provider_deposit = agreement
+        .provider_bond
+        .checked_add(agreement.jury_fee)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    if provider_deposit > 0 {
         transfer_from_user(
             &ctx.accounts.token_program,
             &ctx.accounts.provider_token_account,
             &ctx.accounts.escrow_vault,
             &ctx.accounts.usdc_mint,
             &ctx.accounts.provider_authority,
-            agreement.provider_bond,
+            provider_deposit,
         )?;
     }
 

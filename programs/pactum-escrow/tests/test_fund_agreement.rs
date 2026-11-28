@@ -41,8 +41,7 @@ fn fund_agreement_deposits_client_funds_and_starts_deadline_clock() {
         common::SeedOfferOpts {
             pricing_type: PricingType::Custom,
             base_price: None,
-            provider_bond: 15_000_000,
-            required_client_bond: 10_000_000,
+            bond: 15_000_000,
             cancellation_policy: None,
         },
     );
@@ -151,10 +150,10 @@ fn fund_agreement_deposits_client_funds_and_starts_deadline_clock() {
     assert_eq!(agreement.current_deadline_ts, 2_086_400);
     assert_eq!(
         common::token_account_amount(&svm, &escrow_vault_pda),
-        125_000_000
+        134_000_000
     );
     assert_eq!(
         common::token_account_amount(&svm, &client_token_account),
-        90_000_000
+        83_000_000
     );
 }

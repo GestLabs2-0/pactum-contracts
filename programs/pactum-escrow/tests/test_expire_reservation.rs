@@ -46,8 +46,7 @@ fn expire_reservation_refunds_client_after_24h_and_rejects_early() {
         common::SeedOfferOpts {
             pricing_type: PricingType::DateRange,
             base_price: Some(25_000_000),
-            provider_bond: 0,
-            required_client_bond: 5_000_000,
+            bond: 5_000_000,
             cancellation_policy: None,
         },
     );

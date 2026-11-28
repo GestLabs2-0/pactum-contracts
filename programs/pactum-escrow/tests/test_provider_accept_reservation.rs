@@ -46,8 +46,7 @@ fn provider_accept_reservation_deposits_bond_within_24h_and_rejects_expired() {
         common::SeedOfferOpts {
             pricing_type: PricingType::DateRange,
             base_price: Some(25_000_000),
-            provider_bond: 10_000_000,
-            required_client_bond: 5_000_000,
+            bond: 10_000_000,
             cancellation_policy: None,
         },
     );
@@ -160,10 +159,10 @@ fn provider_accept_reservation_deposits_bond_within_24h_and_rejects_expired() {
     assert_eq!(res.status, DateRangeStatus::Accepted);
     assert_eq!(
         common::token_account_amount(&svm, &escrow_vault_pda),
-        65_000_000
+        74_000_000
     );
     assert_eq!(
         common::token_account_amount(&svm, &provider_token_account),
-        40_000_000
+        38_000_000
     );
 }

@@ -44,8 +44,7 @@ fn create_reservation_cross_year_locks_both_years() {
         common::SeedOfferOpts {
             pricing_type: PricingType::DateRange,
             base_price: Some(20_000_000),
-            provider_bond: 0,
-            required_client_bond: 0,
+            bond: 0,
             cancellation_policy: None,
         },
     );

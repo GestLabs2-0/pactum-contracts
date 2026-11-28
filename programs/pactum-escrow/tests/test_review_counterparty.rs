@@ -41,15 +41,14 @@ fn review_counterparty_updates_core_reputation_and_blocks_duplicate() {
         common::SeedOfferOpts {
             pricing_type: PricingType::Fixed,
             base_price: Some(100_000_000),
-            provider_bond: 0,
-            required_client_bond: 0,
+            bond: 0,
             cancellation_policy: None,
         },
     );
     let client_token_account =
         common::create_token_account(&mut svm, &usdc_mint, &client_auth.pubkey(), 200_000_000);
     let provider_token_account =
-        common::create_token_account(&mut svm, &usdc_mint, &provider_auth.pubkey(), 0);
+        common::create_token_account(&mut svm, &usdc_mint, &provider_auth.pubkey(), 10_000_000);
 
     let nonce = 1u64;
     let (agreement_pda, _) = Pubkey::find_program_address(

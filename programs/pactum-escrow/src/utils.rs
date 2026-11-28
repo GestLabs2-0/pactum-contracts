@@ -7,8 +7,8 @@ use anchor_spl::token_interface::{
 use crate::{
     constants::{
         BPS_DENOMINATOR, CPI_AUTHORITY_SEED, DEFAULT_CANCELLATION_WINDOW_HOURS,
-        DEFAULT_CLIENT_REFUND_PCT, ESCROW_VAULT_SEED, MAX_MILESTONES, PERCENTAGE_DENOMINATOR,
-        SECONDS_PER_DAY, SECONDS_PER_HOUR,
+        DEFAULT_CLIENT_REFUND_PCT, ESCROW_VAULT_SEED, MAX_MILESTONES, MIN_JURY_FEE,
+        PERCENTAGE_DENOMINATOR, SECONDS_PER_DAY, SECONDS_PER_HOUR,
     },
     error::PactumEscrowError,
     events::{
@@ -42,6 +42,8 @@ pub fn refund_and_close_pending_agreement<'info>(
     let refund = agreement
         .total_amount
         .checked_add(agreement.client_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?
+        .checked_add(agreement.jury_fee)
         .ok_or(PactumEscrowError::MathOverflow)?;
 
     transfer_from_vault(
@@ -81,7 +83,11 @@ pub fn refund_and_close_proposed_agreement<'info>(
     token_program: &Interface<'info, TokenInterface>,
     reason: &str,
 ) -> Result<()> {
-    if agreement.provider_bond > 0 {
+    let provider_refund = agreement
+        .provider_bond
+        .checked_add(agreement.jury_fee)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    if provider_refund > 0 {
         transfer_from_vault(
             token_program,
             escrow_vault,
@@ -89,7 +95,7 @@ pub fn refund_and_close_proposed_agreement<'info>(
             usdc_mint,
             agreement.key(),
             agreement.escrow_vault_bump,
-            agreement.provider_bond,
+            provider_refund,
         )?;
     }
 
@@ -290,7 +296,15 @@ pub fn release_current_milestone<'info>(
         return Ok(());
     }
 
-    // Final milestone settlement: return bonds, close vault, record outcomes.
+    // Final milestone settlement: return bonds and refundable jury_fee deposits, close vault, record outcomes.
+    let provider_return = agreement
+        .provider_bond
+        .checked_add(agreement.jury_fee)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    let client_return = agreement
+        .client_bond
+        .checked_add(agreement.jury_fee)
+        .ok_or(PactumEscrowError::MathOverflow)?;
     transfer_from_vault(
         token_program,
         escrow_vault,
@@ -298,7 +312,7 @@ pub fn release_current_milestone<'info>(
         usdc_mint,
         agreement_key,
         vault_bump,
-        agreement.provider_bond,
+        provider_return,
     )?;
     transfer_from_vault(
         token_program,
@@ -307,7 +321,7 @@ pub fn release_current_milestone<'info>(
         usdc_mint,
         agreement_key,
         vault_bump,
-        agreement.client_bond,
+        client_return,
     )?;
     close_vault(
         token_program,
@@ -369,8 +383,12 @@ pub fn init_reservation_state<'info>(
     let total_amount = nights
         .checked_mul(nightly_rate)
         .ok_or(PactumEscrowError::MathOverflow)?;
+    let jury_fee = effective_jury_fee(offer, marketplace);
+    let bond = offer.bond;
     let deposit = total_amount
-        .checked_add(offer.required_client_bond)
+        .checked_add(bond)
+        .ok_or(PactumEscrowError::MathOverflow)?
+        .checked_add(jury_fee)
         .ok_or(PactumEscrowError::MathOverflow)?;
 
     let (integrator_key, integrator_fee_bps) = resolve_integrator(integrator, marketplace.key())?;
@@ -396,12 +414,12 @@ pub fn init_reservation_state<'info>(
     reservation.integrator = integrator_key;
     reservation.integrator_fee_bps = integrator_fee_bps;
     reservation.arbiter = arbiter.or(offer.default_arbiter);
-    reservation.jury_fee = offer.jury_fee;
+    reservation.jury_fee = jury_fee;
     reservation.check_in = check_in;
     reservation.check_out = check_out;
     reservation.total_amount = total_amount;
-    reservation.provider_bond = offer.provider_bond;
-    reservation.client_bond = offer.required_client_bond;
+    reservation.provider_bond = bond;
+    reservation.client_bond = bond;
     reservation.cancellation_policy = policy;
     reservation.provider_cancellation_penalty_pct = marketplace.provider_cancellation_penalty_pct;
     reservation.content_ref = offer.content_ref;
@@ -439,6 +457,8 @@ pub fn close_pending_reservation<'info>(
     let refund = reservation
         .total_amount
         .checked_add(reservation.client_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?
+        .checked_add(reservation.jury_fee)
         .ok_or(PactumEscrowError::MathOverflow)?;
     let key = reservation.key();
     let vault_bump = reservation.escrow_vault_bump;
@@ -537,9 +557,13 @@ pub fn settle_client_cancel_reservation<'info>(
     let vault_bump = reservation.escrow_vault_bump;
     let total_client = client_refund
         .checked_add(reservation.client_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?
+        .checked_add(reservation.jury_fee)
         .ok_or(PactumEscrowError::MathOverflow)?;
     let total_provider = provider_payout
         .checked_add(reservation.provider_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?
+        .checked_add(reservation.jury_fee)
         .ok_or(PactumEscrowError::MathOverflow)?;
 
     transfer_from_vault(
@@ -651,10 +675,14 @@ pub fn settle_provider_cancel_reservation<'info>(
     let provider_refund = reservation
         .provider_bond
         .checked_sub(slash)
+        .ok_or(PactumEscrowError::MathOverflow)?
+        .checked_add(reservation.jury_fee)
         .ok_or(PactumEscrowError::MathOverflow)?;
     let total_client = reservation
         .total_amount
         .checked_add(reservation.client_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?
+        .checked_add(reservation.jury_fee)
         .ok_or(PactumEscrowError::MathOverflow)?
         .checked_add(slash)
         .ok_or(PactumEscrowError::MathOverflow)?;
@@ -1102,4 +1130,12 @@ pub fn validate_milestones(milestone_amounts: &[u64], step_duration_secs: i64) -
     }
 
     Ok(total_amount)
+}
+
+/// Returns the effective per-party refundable jury fee reserve:
+/// `max(MIN_JURY_FEE, marketplace.min_jury_fee, offer.jury_fee)`.
+pub fn effective_jury_fee(offer: &Offer, marketplace: &Marketplace) -> u64 {
+    MIN_JURY_FEE
+        .max(marketplace.min_jury_fee)
+        .max(offer.jury_fee)
 }

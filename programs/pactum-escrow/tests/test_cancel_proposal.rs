@@ -42,8 +42,7 @@ fn cancel_proposal_by_client_refunds_provider_bond_and_closes_accounts() {
         common::SeedOfferOpts {
             pricing_type: PricingType::Custom,
             base_price: None,
-            provider_bond: 15_000_000,
-            required_client_bond: 10_000_000,
+            bond: 15_000_000,
             cancellation_policy: None,
         },
     );

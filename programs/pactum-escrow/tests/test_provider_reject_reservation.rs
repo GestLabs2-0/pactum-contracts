@@ -45,8 +45,7 @@ fn provider_reject_reservation_releases_days_refunds_client_and_closes_vault() {
         common::SeedOfferOpts {
             pricing_type: PricingType::DateRange,
             base_price: Some(25_000_000),
-            provider_bond: 10_000_000,
-            required_client_bond: 5_000_000,
+            bond: 10_000_000,
             cancellation_policy: None,
         },
     );

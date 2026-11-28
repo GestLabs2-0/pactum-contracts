@@ -12,8 +12,7 @@ pub struct CreateOfferParams {
     pub base_price: Option<u64>,
     pub pricing_type: PricingType,
     pub approval_window_secs: i64,
-    pub provider_bond: u64,
-    pub required_client_bond: u64,
+    pub bond: u64,
     pub jury_fee: u64,
     pub default_arbiter: Option<Pubkey>,
     pub cancellation_policy: Option<CancellationPolicy>,
@@ -88,8 +87,7 @@ pub fn handler_create_offer(ctx: Context<CreateOffer>, params: CreateOfferParams
     offer.base_price = params.base_price;
     offer.pricing_type = params.pricing_type;
     offer.approval_window_secs = params.approval_window_secs;
-    offer.provider_bond = params.provider_bond;
-    offer.required_client_bond = params.required_client_bond;
+    offer.bond = params.bond;
     offer.jury_fee = params.jury_fee;
     offer.default_arbiter = params.default_arbiter;
     offer.cancellation_policy = params.cancellation_policy;

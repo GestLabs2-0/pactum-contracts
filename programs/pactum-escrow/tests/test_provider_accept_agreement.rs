@@ -41,8 +41,7 @@ fn provider_accept_agreement_deposits_bond_and_starts_deadline_clock() {
         common::SeedOfferOpts {
             pricing_type: PricingType::Fixed,
             base_price: Some(100_000_000),
-            provider_bond: 10_000_000,
-            required_client_bond: 20_000_000,
+            bond: 10_000_000,
             cancellation_policy: None,
         },
     );
@@ -151,10 +150,10 @@ fn provider_accept_agreement_deposits_bond_and_starts_deadline_clock() {
     assert_eq!(agreement.current_deadline_ts, 1_086_400);
     assert_eq!(
         common::token_account_amount(&svm, &escrow_vault_pda),
-        130_000_000
+        124_000_000
     );
     assert_eq!(
         common::token_account_amount(&svm, &provider_token_account),
-        40_000_000
+        38_000_000
     );
 }

@@ -341,8 +341,7 @@ pub fn seed_provider(
 pub struct SeedOfferOpts {
     pub pricing_type: PricingType,
     pub base_price: Option<u64>,
-    pub provider_bond: u64,
-    pub required_client_bond: u64,
+    pub bond: u64,
     pub cancellation_policy: Option<CancellationPolicy>,
 }
 
@@ -366,8 +365,7 @@ pub fn seed_offer(
         base_price: opts.base_price,
         pricing_type: opts.pricing_type,
         approval_window_secs: 86_400,
-        provider_bond: opts.provider_bond,
-        required_client_bond: opts.required_client_bond,
+        bond: opts.bond,
         jury_fee: 0,
         default_arbiter: None,
         cancellation_policy: opts.cancellation_policy,

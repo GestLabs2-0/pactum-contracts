@@ -11,7 +11,7 @@ use crate::{
     error::PactumEscrowError,
     events::AgreementProposed,
     state::{Agreement, AgreementStatus, EscrowConfig},
-    utils::{resolve_integrator, transfer_from_user, validate_milestones},
+    utils::{effective_jury_fee, resolve_integrator, transfer_from_user, validate_milestones},
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
@@ -130,21 +130,25 @@ pub fn handler_propose_agreement(
     ctx: Context<ProposeAgreement>,
     params: ProposeAgreementParams,
 ) -> Result<()> {
-    let total_amount =
-        validate_milestones(&params.milestone_amounts, params.step_duration_secs)?;
+    let total_amount = validate_milestones(&params.milestone_amounts, params.step_duration_secs)?;
 
     let offer = &ctx.accounts.offer;
+    let jury_fee = effective_jury_fee(offer, &ctx.accounts.marketplace);
+    let bond = offer.bond;
+    let provider_deposit = bond
+        .checked_add(jury_fee)
+        .ok_or(PactumEscrowError::MathOverflow)?;
     let (integrator, integrator_fee_bps) =
         resolve_integrator(&ctx.accounts.integrator, ctx.accounts.marketplace.key())?;
 
-    if offer.provider_bond > 0 {
+    if provider_deposit > 0 {
         transfer_from_user(
             &ctx.accounts.token_program,
             &ctx.accounts.provider_token_account,
             &ctx.accounts.escrow_vault,
             &ctx.accounts.usdc_mint,
             &ctx.accounts.provider_authority,
-            offer.provider_bond,
+            provider_deposit,
         )?;
     }
 
@@ -156,10 +160,10 @@ pub fn handler_propose_agreement(
     agreement.integrator = integrator;
     agreement.integrator_fee_bps = integrator_fee_bps;
     agreement.arbiter = params.arbiter.or(offer.default_arbiter);
-    agreement.jury_fee = offer.jury_fee;
+    agreement.jury_fee = jury_fee;
     agreement.total_amount = total_amount;
-    agreement.provider_bond = offer.provider_bond;
-    agreement.client_bond = offer.required_client_bond;
+    agreement.provider_bond = bond;
+    agreement.client_bond = bond;
     agreement.released_amount = 0;
     agreement.milestone_amounts = params.milestone_amounts;
     agreement.completed_milestones = 0;

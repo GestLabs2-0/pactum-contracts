@@ -43,3 +43,7 @@ pub const DEFAULT_CLIENT_REFUND_PCT: u8 = 60;
 pub const MIN_REVIEW_RATING: u8 = 1;
 
 pub const MAX_REVIEW_RATING: u8 = 5;
+
+/// Minimum refundable jury fee reserve (2 USDC = 2_000_000 base units) deposited
+/// by each party so disputes can always pay jurors/arbiters without touching principal or bonds.
+pub const MIN_JURY_FEE: u64 = 2_000_000;

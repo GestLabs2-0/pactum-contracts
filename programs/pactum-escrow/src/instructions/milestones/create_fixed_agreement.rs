@@ -11,7 +11,7 @@ use crate::{
     error::PactumEscrowError,
     events::AgreementCreated,
     state::{Agreement, AgreementStatus, EscrowConfig},
-    utils::{resolve_integrator, transfer_from_user, validate_milestones},
+    utils::{effective_jury_fee, resolve_integrator, transfer_from_user, validate_milestones},
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
@@ -130,8 +130,7 @@ pub fn handler_create_fixed_agreement(
     ctx: Context<CreateFixedAgreement>,
     params: CreateFixedAgreementParams,
 ) -> Result<()> {
-    let total_amount =
-        validate_milestones(&params.milestone_amounts, params.step_duration_secs)?;
+    let total_amount = validate_milestones(&params.milestone_amounts, params.step_duration_secs)?;
     let offer = &ctx.accounts.offer;
     let base_price = offer
         .base_price
@@ -145,9 +144,12 @@ pub fn handler_create_fixed_agreement(
     let (integrator, integrator_fee_bps) =
         resolve_integrator(&ctx.accounts.integrator, ctx.accounts.marketplace.key())?;
 
-    let client_bond = offer.required_client_bond;
+    let jury_fee = effective_jury_fee(offer, &ctx.accounts.marketplace);
+    let bond = offer.bond;
     let deposit_amount = total_amount
-        .checked_add(client_bond)
+        .checked_add(bond)
+        .ok_or(PactumEscrowError::MathOverflow)?
+        .checked_add(jury_fee)
         .ok_or(PactumEscrowError::MathOverflow)?;
 
     transfer_from_user(
@@ -167,10 +169,10 @@ pub fn handler_create_fixed_agreement(
     agreement.integrator = integrator;
     agreement.integrator_fee_bps = integrator_fee_bps;
     agreement.arbiter = params.arbiter.or(offer.default_arbiter);
-    agreement.jury_fee = offer.jury_fee;
+    agreement.jury_fee = jury_fee;
     agreement.total_amount = total_amount;
-    agreement.provider_bond = offer.provider_bond;
-    agreement.client_bond = client_bond;
+    agreement.provider_bond = bond;
+    agreement.client_bond = bond;
     agreement.released_amount = 0;
     agreement.milestone_amounts = params.milestone_amounts;
     agreement.completed_milestones = 0;

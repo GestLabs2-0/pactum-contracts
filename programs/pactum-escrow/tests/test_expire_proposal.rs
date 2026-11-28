@@ -41,8 +41,7 @@ fn expire_proposal_refunds_provider_bond_after_expiry_and_rejects_early() {
         common::SeedOfferOpts {
             pricing_type: PricingType::Custom,
             base_price: None,
-            provider_bond: 15_000_000,
-            required_client_bond: 10_000_000,
+            bond: 15_000_000,
             cancellation_policy: None,
         },
     );

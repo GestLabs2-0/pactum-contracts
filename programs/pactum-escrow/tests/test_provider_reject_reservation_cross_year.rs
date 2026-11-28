@@ -45,8 +45,7 @@ fn provider_reject_reservation_cross_year_releases_both_years_and_refunds() {
         common::SeedOfferOpts {
             pricing_type: PricingType::DateRange,
             base_price: Some(20_000_000),
-            provider_bond: 0,
-            required_client_bond: 5_000_000,
+            bond: 5_000_000,
             cancellation_policy: None,
         },
     );

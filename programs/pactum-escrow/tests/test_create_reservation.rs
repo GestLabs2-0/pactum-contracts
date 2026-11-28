@@ -48,8 +48,7 @@ fn create_reservation_locks_days_and_snapshots_policy() {
         common::SeedOfferOpts {
             pricing_type: PricingType::DateRange,
             base_price: Some(25_000_000), // 25 USDC/night
-            provider_bond: 10_000_000,
-            required_client_bond: 5_000_000,
+            bond: 10_000_000,
             cancellation_policy: Some(policy),
         },
     );
@@ -124,7 +123,7 @@ fn create_reservation_locks_days_and_snapshots_policy() {
     assert_eq!(res.provider_cancellation_penalty_pct, 10);
     assert_eq!(
         common::token_account_amount(&svm, &escrow_vault_pda),
-        80_000_000
+        87_000_000
     );
 
     let bd = BookingDays::try_deserialize(

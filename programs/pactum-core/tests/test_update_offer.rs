@@ -53,8 +53,7 @@ fn update_offer_changes_base_price() {
         &pactum_core::instruction::UpdateOffer {
             params: UpdateOfferParams {
                 base_price: Some(Some(75_000_000)),
-                provider_bond: None,
-                required_client_bond: None,
+                bond: None,
                 default_arbiter: None,
                 cancellation_policy: None,
                 content_ref: None,
@@ -119,8 +118,7 @@ fn update_offer_updates_cancellation_policy_and_rejects_pct_over_100() {
         &pactum_core::instruction::UpdateOffer {
             params: UpdateOfferParams {
                 base_price: None,
-                provider_bond: None,
-                required_client_bond: None,
+                bond: None,
                 default_arbiter: None,
                 cancellation_policy: Some(Some(policy)),
                 content_ref: None,
@@ -146,8 +144,7 @@ fn update_offer_updates_cancellation_policy_and_rejects_pct_over_100() {
         &pactum_core::instruction::UpdateOffer {
             params: UpdateOfferParams {
                 base_price: None,
-                provider_bond: None,
-                required_client_bond: None,
+                bond: None,
                 default_arbiter: None,
                 cancellation_policy: Some(Some(CancellationPolicy {
                     window_hours: 24,

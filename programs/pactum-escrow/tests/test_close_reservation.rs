@@ -47,8 +47,7 @@ fn close_reservation_reclaims_rent_after_96h_and_rejects_early() {
         common::SeedOfferOpts {
             pricing_type: PricingType::DateRange,
             base_price: Some(25_000_000),
-            provider_bond: 0,
-            required_client_bond: 0,
+            bond: 0,
             cancellation_policy: None,
         },
     );

@@ -128,6 +128,12 @@ pub fn handler_cancel_agreement(ctx: Context<CancelAgreement>) -> Result<()> {
     let client_refund = agreement
         .total_amount
         .checked_add(agreement.client_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?
+        .checked_add(agreement.jury_fee)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    let provider_refund = agreement
+        .provider_bond
+        .checked_add(agreement.jury_fee)
         .ok_or(PactumEscrowError::MathOverflow)?;
     let agreement_key = agreement.key();
     let vault_bump = agreement.escrow_vault_bump;
@@ -148,7 +154,7 @@ pub fn handler_cancel_agreement(ctx: Context<CancelAgreement>) -> Result<()> {
         &ctx.accounts.usdc_mint,
         agreement_key,
         vault_bump,
-        agreement.provider_bond,
+        provider_refund,
     )?;
     close_vault(
         &ctx.accounts.token_program,

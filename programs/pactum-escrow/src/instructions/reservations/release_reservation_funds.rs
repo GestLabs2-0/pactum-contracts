@@ -154,6 +154,12 @@ pub fn handler_release_reservation_funds(ctx: Context<ReleaseReservationFunds>) 
     let total_provider = fees
         .provider_payout
         .checked_add(reservation.provider_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?
+        .checked_add(reservation.jury_fee)
+        .ok_or(PactumEscrowError::MathOverflow)?;
+    let total_client = reservation
+        .client_bond
+        .checked_add(reservation.jury_fee)
         .ok_or(PactumEscrowError::MathOverflow)?;
 
     transfer_from_vault(
@@ -193,7 +199,7 @@ pub fn handler_release_reservation_funds(ctx: Context<ReleaseReservationFunds>) 
         &ctx.accounts.usdc_mint,
         key,
         vault_bump,
-        reservation.client_bond,
+        total_client,
     )?;
     close_vault(
         &ctx.accounts.token_program,

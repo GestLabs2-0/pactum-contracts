@@ -91,6 +91,8 @@ pub fn handler_fund_agreement(
     let deposit = agreement
         .total_amount
         .checked_add(agreement.client_bond)
+        .ok_or(PactumEscrowError::MathOverflow)?
+        .checked_add(agreement.jury_fee)
         .ok_or(PactumEscrowError::MathOverflow)?;
 
     transfer_from_user(

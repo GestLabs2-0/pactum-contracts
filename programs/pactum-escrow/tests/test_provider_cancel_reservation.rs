@@ -46,8 +46,7 @@ fn provider_cancel_reservation_slashes_bond_inside_window() {
         common::SeedOfferOpts {
             pricing_type: PricingType::DateRange,
             base_price: Some(50_000_000),
-            provider_bond: 10_000_000,
-            required_client_bond: 20_000_000,
+            bond: 10_000_000,
             cancellation_policy: Some(CancellationPolicy {
                 window_hours: 48,
                 client_refund_pct: 60,

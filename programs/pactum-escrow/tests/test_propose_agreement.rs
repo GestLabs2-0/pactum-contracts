@@ -39,8 +39,7 @@ fn propose_agreement_sets_custom_milestones_and_deposits_provider_bond() {
         common::SeedOfferOpts {
             pricing_type: PricingType::Custom,
             base_price: None,
-            provider_bond: 15_000_000,
-            required_client_bond: 10_000_000,
+            bond: 15_000_000,
             cancellation_policy: None,
         },
     );
@@ -103,10 +102,10 @@ fn propose_agreement_sets_custom_milestones_and_deposits_provider_bond() {
     assert_eq!(agreement.milestone_amounts, vec![30_000_000, 70_000_000]);
     assert_eq!(
         common::token_account_amount(&svm, &escrow_vault_pda),
-        15_000_000
+        17_000_000
     );
     assert_eq!(
         common::token_account_amount(&svm, &provider_token_account),
-        35_000_000
+        33_000_000
     );
 }

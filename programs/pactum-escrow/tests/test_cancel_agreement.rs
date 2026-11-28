@@ -41,8 +41,7 @@ fn cancel_agreement_pre_delivery_refunds_funds_and_records_cancelled_outcome() {
         common::SeedOfferOpts {
             pricing_type: PricingType::Fixed,
             base_price: Some(100_000_000),
-            provider_bond: 10_000_000,
-            required_client_bond: 20_000_000,
+            bond: 10_000_000,
             cancellation_policy: None,
         },
     );
