@@ -53,4 +53,15 @@ pub mod pactum_disputes {
     pub fn escalate_dispute(ctx: Context<EscalateDispute>) -> Result<()> {
         handler_escalate_dispute(ctx)
     }
+
+    pub fn resolve_by_arbiter(
+        ctx: Context<ResolveByArbiter>,
+        outcome: DisputeOutcome,
+    ) -> Result<()> {
+        handler_resolve_by_arbiter(ctx, outcome)
+    }
+
+    pub fn propose_arbiter_replacement(ctx: Context<ProposeArbiterReplacement>) -> Result<()> {
+        handler_propose_arbiter_replacement(ctx)
+    }
 }
