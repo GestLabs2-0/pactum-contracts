@@ -77,6 +77,7 @@ async function main() {
 			pkg.name = `@GestLabs2-0/${program.name
 				.toLowerCase()
 				.replace(/_/g, "-")}`;
+			pkg.version = "1.0.0";
 
 			await fs.writeFile(packageJsonPath, JSON.stringify(pkg, null, 2));
 		})

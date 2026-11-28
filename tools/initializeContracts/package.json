@@ -2,7 +2,7 @@
     "name": "initialize-contracts",
     "version": "1.0.0",
     "private": true,
-    "description": "CLI tool to initialize the Stayke contracts on a Solana cluster",
+    "description": "CLI tool to initialize the Pactum contracts on a Solana cluster",
     "main": "dist/index.ts",
     "files": [
         "./dist",
@@ -15,12 +15,12 @@
     "keywords": [],
     "author": "Gabriel Torres gabrieltorres2014@gmail.com",
     "dependencies": {
-        "@GestLabs2-0/stayke-core": "workspace:*",
-        "@GestLabs2-0/stayke-disputes": "workspace:*",
-        "@GestLabs2-0/stayke-escrow": "workspace:*",
-        "@GestLabs2-0/stayke-treasury": "workspace:*",
-        "@GestLabs2-0/stayke-config": "workspace:*",
-        "@solana/kit": "^6.4.0"
+        "@GestLabs2-0/pactum-config": "workspace:*",
+        "@GestLabs2-0/pactum-core": "workspace:*",
+        "@GestLabs2-0/pactum-disputes": "workspace:*",
+        "@GestLabs2-0/pactum-escrow": "workspace:*",
+        "@GestLabs2-0/pactum-treasury": "workspace:*",
+        "@solana/kit": "^8.5.0"
     },
     "devDependencies": {
         "@types/node": "^18.19.130",
