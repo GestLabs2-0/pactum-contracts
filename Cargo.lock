@@ -1859,6 +1859,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "pactum-disputes"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "bytemuck",
+ "litesvm",
+ "pactum-config",
+ "pactum-core",
+ "pactum-escrow",
+ "pactum-treasury",
+ "solana-account",
+ "solana-keypair",
+ "solana-message",
+ "solana-signer",
+ "solana-transaction",
+]
+
+[[package]]
 name = "pactum-escrow"
 version = "0.1.0"
 dependencies = [
