@@ -283,6 +283,7 @@ pub fn seed_judge(
         leaf_index: 0,
         is_active_in_pool: staked_amount > 0,
         active_disputes,
+        freezed_stake: 0,
         cases_voted: 0,
         cases_in_consensus: 0,
         is_banned: false,

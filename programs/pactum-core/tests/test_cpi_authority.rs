@@ -39,6 +39,7 @@ fn wallet_cannot_call_cpi_update_judge_stake() {
         cases_voted: 0,
         cases_in_consensus: 0,
         is_banned: false,
+        freezed_stake: 0,
         bump: judge_bump,
     };
     svm.set_account(

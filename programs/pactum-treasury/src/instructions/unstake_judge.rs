@@ -88,10 +88,14 @@ pub fn handler_unstake_judge(ctx: Context<UnstakeJudge>, amount: u64) -> Result<
         PactumTreasuryError::InsufficientStake
     );
 
-    let remaining = ctx
+    let unstakable_amount = ctx
         .accounts
         .judge
         .staked_amount
+        .checked_sub(ctx.accounts.judge.freezed_stake)
+        .ok_or(PactumTreasuryError::MathOverflow)?;
+
+    let remaining = unstakable_amount
         .checked_sub(amount)
         .ok_or(PactumTreasuryError::MathOverflow)?;
     if remaining > 0 {
@@ -100,6 +104,10 @@ pub fn handler_unstake_judge(ctx: Context<UnstakeJudge>, amount: u64) -> Result<
             PactumTreasuryError::StakeBelowMinimum
         );
     }
+
+    let new_stake = remaining
+        .checked_add(ctx.accounts.judge.freezed_stake)
+        .ok_or(PactumTreasuryError::MathOverflow)?;
 
     let marketplace_key = ctx.accounts.marketplace.key();
     let vault_seeds: &[&[&[u8]]] = &[&[
@@ -139,7 +147,7 @@ pub fn handler_unstake_judge(ctx: Context<UnstakeJudge>, amount: u64) -> Result<
         role: ParticipantRole::Judge,
         amount,
         is_stake: false,
-        new_total: remaining,
+        new_total: new_stake,
     });
     Ok(())
 }

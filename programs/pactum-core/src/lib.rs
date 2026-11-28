@@ -152,6 +152,14 @@ pub mod pactum_core {
         handler_cpi_update_judge_stake(ctx, amount, is_stake, pool_id, leaf_index)
     }
 
+    pub fn cpi_update_freeze_stake(
+        ctx: Context<CpiUpdateJudgeStake>,
+        amount: u64,
+        is_stake: bool,
+    ) -> Result<()> {
+        handler_cpi_update_judge_freeze_stake(ctx, amount, is_stake)
+    }
+
     pub fn cpi_update_arbiter_stake(
         ctx: Context<CpiUpdateArbiterStake>,
         amount: u64,
