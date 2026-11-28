@@ -78,6 +78,7 @@ pub fn handler_init_judge(ctx: Context<InitJudge>) -> Result<()> {
     judge.active_disputes = 0;
     judge.cases_voted = 0;
     judge.cases_in_consensus = 0;
+    judge.freezed_stake = 0;
     judge.is_banned = false;
     judge.bump = ctx.bumps.judge;
     Ok(())

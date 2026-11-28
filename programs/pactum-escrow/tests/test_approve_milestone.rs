@@ -41,8 +41,7 @@ fn approve_milestone_loops_and_settles_final_milestone_with_fees_bonds_and_outco
         common::SeedOfferOpts {
             pricing_type: PricingType::Custom,
             base_price: None,
-            provider_bond: 10_000_000,
-            required_client_bond: 20_000_000,
+            bond: 10_000_000,
             cancellation_policy: None,
         },
     );

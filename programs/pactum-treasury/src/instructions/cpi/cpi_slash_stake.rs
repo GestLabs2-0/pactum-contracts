@@ -135,6 +135,18 @@ pub fn handler_cpi_slash_stake(
             );
             // TODO: move cpi call to disputes instead of making a long cpi call
             pactum_core::cpi::cpi_update_judge_stake(cpi_core, amount, false, pool_id, leaf_index)?;
+
+            let cpi_core = CpiContext::new_with_signer(
+                ctx.accounts.core_program.key(),
+                pactum_core::cpi::accounts::CpiUpdateJudgeStake {
+                    judge: judge.to_account_info(),
+                    global_config: ctx.accounts.global_config.to_account_info(),
+                    cpi_authority: ctx.accounts.treasury_cpi_authority.to_account_info(),
+                },
+                cpi_seeds,
+            );
+
+            pactum_core::cpi::cpi_update_freeze_stake(cpi_core, amount, false)?;
             key
         }
         ParticipantRole::Arbiter => {

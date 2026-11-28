@@ -61,6 +61,7 @@ pub struct Judge {
     pub marketplace: Pubkey,
     pub authority: Pubkey,
     pub staked_amount: u64,
+    pub freezed_stake: u64,
     pub pool_id: u16,
     pub leaf_index: u32,
     pub is_active_in_pool: bool,

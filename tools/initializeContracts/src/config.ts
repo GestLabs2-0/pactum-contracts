@@ -4,14 +4,16 @@ export type CLIArgs = {
 	rpcUrl?: string;
 	program: string;
 	mintAddress?: string;
-	feeBps?: number;
-	minimumDeposit?: number;
-	freeOps?: number;
-	maxOperations?: number;
-	coreProgram?: string;
-	escrowProgram?: string;
-	disputesProgram?: string;
-	treasuryProgram?: string;
+	protocolFeeBps?: number;
+	maxProtocolFee?: bigint;
+	disputeEscalationFee?: bigint;
+	sasProgram?: string;
+	sasCredential?: string;
+	p2pWindowSecs?: number;
+	voteWindowSecs?: number;
+	revealWindowSecs?: number;
+	arbiterSlaSlashBps?: number;
+	noFaultFeeBps?: number;
 };
 
 export function parseArgs(): CLIArgs {
@@ -24,15 +26,18 @@ export function parseArgs(): CLIArgs {
 	};
 
 	const keypair = getArg("--keypair");
-	const program = getArg("--program");
+	const program = getArg("--program") ?? "all";
 
 	if (!keypair) throw new Error("Debes pasar --keypair");
-	if (!program) throw new Error("Debes pasar --program");
 
-	const minimumDeposit = getArg("--minimum-deposit");
-	const feeBps = getArg("--fee-bps");
-	const freeOpsArg = getArg("--free-ops") ?? getArg("--max-operations");
-	const maxOperationsArg = getArg("--max-operations");
+	const protocolFeeBps = getArg("--protocol-fee-bps") ?? getArg("--fee-bps");
+	const maxProtocolFee = getArg("--max-protocol-fee");
+	const disputeEscalationFee = getArg("--dispute-escalation-fee");
+	const p2pWindowSecs = getArg("--p2p-window-secs");
+	const voteWindowSecs = getArg("--vote-window-secs");
+	const revealWindowSecs = getArg("--reveal-window-secs");
+	const arbiterSlaSlashBps = getArg("--arbiter-sla-slash-bps");
+	const noFaultFeeBps = getArg("--no-fault-fee-bps");
 
 	return {
 		keypair,
@@ -40,13 +45,21 @@ export function parseArgs(): CLIArgs {
 		cluster: getArg("--cluster"),
 		rpcUrl: getArg("--rpc-url"),
 		mintAddress: getArg("--mint-address"),
-		feeBps: feeBps ? parseInt(feeBps) : undefined,
-		minimumDeposit: minimumDeposit ? parseInt(minimumDeposit) : undefined,
-		freeOps: freeOpsArg ? parseInt(freeOpsArg) : undefined,
-		maxOperations: maxOperationsArg ? parseInt(maxOperationsArg) : undefined,
-		coreProgram: getArg("--core-program"),
-		escrowProgram: getArg("--escrow-program"),
-		disputesProgram: getArg("--disputes-program"),
-		treasuryProgram: getArg("--treasury-program"),
+		protocolFeeBps: protocolFeeBps ? parseInt(protocolFeeBps, 10) : undefined,
+		maxProtocolFee: maxProtocolFee ? BigInt(maxProtocolFee) : undefined,
+		disputeEscalationFee: disputeEscalationFee
+			? BigInt(disputeEscalationFee)
+			: undefined,
+		sasProgram: getArg("--sas-program"),
+		sasCredential: getArg("--sas-credential"),
+		p2pWindowSecs: p2pWindowSecs ? parseInt(p2pWindowSecs, 10) : undefined,
+		voteWindowSecs: voteWindowSecs ? parseInt(voteWindowSecs, 10) : undefined,
+		revealWindowSecs: revealWindowSecs
+			? parseInt(revealWindowSecs, 10)
+			: undefined,
+		arbiterSlaSlashBps: arbiterSlaSlashBps
+			? parseInt(arbiterSlaSlashBps, 10)
+			: undefined,
+		noFaultFeeBps: noFaultFeeBps ? parseInt(noFaultFeeBps, 10) : undefined,
 	};
 }

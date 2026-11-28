@@ -43,15 +43,14 @@ fn claim_milestone_releases_after_approval_window_and_rejects_early() {
         common::SeedOfferOpts {
             pricing_type: PricingType::Fixed,
             base_price: Some(100_000_000),
-            provider_bond: 0,
-            required_client_bond: 0,
+            bond: 0,
             cancellation_policy: None,
         },
     );
     let client_token_account =
         common::create_token_account(&mut svm, &usdc_mint, &client_auth.pubkey(), 200_000_000);
     let provider_token_account =
-        common::create_token_account(&mut svm, &usdc_mint, &provider_auth.pubkey(), 0);
+        common::create_token_account(&mut svm, &usdc_mint, &provider_auth.pubkey(), 10_000_000);
 
     let nonce = 1u64;
     let (agreement_pda, _) = Pubkey::find_program_address(
@@ -75,6 +74,7 @@ fn claim_milestone_releases_after_approval_window_and_rejects_early() {
         &pactum_escrow::instruction::CreateFixedAgreement {
             params: CreateFixedAgreementParams {
                 nonce,
+                milestone_amounts: vec![100_000_000],
                 step_duration_secs: 86_400,
                 deal_contract_hash: None,
                 arbiter: None,
@@ -199,7 +199,7 @@ fn claim_milestone_releases_after_approval_window_and_rejects_early() {
     assert_eq!(done.status, AgreementStatus::Completed);
     assert_eq!(
         common::token_account_amount(&svm, &provider_token_account),
-        99_000_000
+        109_000_000
     );
     assert_eq!(
         common::token_account_amount(&svm, &platform_vault),

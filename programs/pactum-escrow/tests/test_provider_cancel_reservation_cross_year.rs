@@ -46,8 +46,7 @@ fn provider_cancel_reservation_cross_year_outside_window_returns_full_bonds() {
         common::SeedOfferOpts {
             pricing_type: PricingType::DateRange,
             base_price: Some(20_000_000),
-            provider_bond: 10_000_000,
-            required_client_bond: 5_000_000,
+            bond: 10_000_000,
             cancellation_policy: Some(CancellationPolicy {
                 window_hours: 48,
                 client_refund_pct: 50,

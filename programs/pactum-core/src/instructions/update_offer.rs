@@ -9,8 +9,7 @@ use crate::{
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub struct UpdateOfferParams {
     pub base_price: Option<Option<u64>>,
-    pub provider_bond: Option<u64>,
-    pub required_client_bond: Option<u64>,
+    pub bond: Option<u64>,
     pub default_arbiter: Option<Option<Pubkey>>,
     pub cancellation_policy: Option<Option<CancellationPolicy>>,
     pub content_ref: Option<[u8; 32]>,
@@ -49,11 +48,8 @@ pub fn handler_update_offer(ctx: Context<UpdateOffer>, params: UpdateOfferParams
         }
         offer.base_price = base_price;
     }
-    if let Some(provider_bond) = params.provider_bond {
-        offer.provider_bond = provider_bond;
-    }
-    if let Some(required_client_bond) = params.required_client_bond {
-        offer.required_client_bond = required_client_bond;
+    if let Some(bond) = params.bond {
+        offer.bond = bond;
     }
     if let Some(default_arbiter) = params.default_arbiter {
         offer.default_arbiter = default_arbiter;

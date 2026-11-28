@@ -1,10 +1,10 @@
 import { parseArgs } from "./config";
 import { createConnection } from "./connection";
-import { initializeConfig } from "./programs/staykeCore";
-import { initializeDisputesConfig } from "./programs/staykeDisputes";
-import { initializeEscrowConfig } from "./programs/staykeEscrow";
-import { initializeGlobalConfig } from "./programs/staykeGlobalConfig";
-import { initializeTreasuryConfig } from "./programs/staykeTreasury";
+import { initializePactumConfig } from "./programs/pactumConfig";
+import { initializePactumCore } from "./programs/pactumCore";
+import { initializePactumDisputes } from "./programs/pactumDisputes";
+import { initializePactumEscrow } from "./programs/pactumEscrow";
+import { initializePactumTreasury } from "./programs/pactumTreasury";
 import { loadKeypair } from "./wallet";
 
 async function main() {
@@ -14,27 +14,33 @@ async function main() {
 	const connection = createConnection(args);
 
 	switch (args.program) {
-		case "stayke-core":
-		case "core":
-			await initializeConfig(connection, keypair);
+		case "all":
+			await initializePactumConfig(connection, keypair, args);
+			await initializePactumCore(connection, keypair);
+			await initializePactumTreasury(connection, keypair);
+			await initializePactumEscrow(connection, keypair);
+			await initializePactumDisputes(connection, keypair, args);
 			break;
-		case "stayke-config":
+		case "pactum-config":
 		case "config":
-			await initializeGlobalConfig(connection, keypair, args);
+			await initializePactumConfig(connection, keypair, args);
 			break;
-		case "stayke-treasury":
+		case "pactum-core":
+		case "core":
+			await initializePactumCore(connection, keypair);
+			break;
+		case "pactum-treasury":
 		case "treasury":
-			await initializeTreasuryConfig(connection, keypair, args);
+			await initializePactumTreasury(connection, keypair);
 			break;
-		case "stayke-disputes":
-		case "disputes":
-			await initializeDisputesConfig(connection, keypair);
-			break;
-		case "stayke-escrow":
+		case "pactum-escrow":
 		case "escrow":
-			await initializeEscrowConfig(connection, keypair);
+			await initializePactumEscrow(connection, keypair);
 			break;
-
+		case "pactum-disputes":
+		case "disputes":
+			await initializePactumDisputes(connection, keypair, args);
+			break;
 		default:
 			throw new Error(`Programa no soportado: ${args.program}`);
 	}

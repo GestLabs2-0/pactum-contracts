@@ -47,15 +47,14 @@ fn reservation_completes_at_check_out_and_rejects_early() {
         common::SeedOfferOpts {
             pricing_type: PricingType::DateRange,
             base_price: Some(25_000_000),
-            provider_bond: 0,
-            required_client_bond: 0,
+            bond: 0,
             cancellation_policy: None,
         },
     );
     let client_token_account =
         common::create_token_account(&mut svm, &usdc_mint, &client_auth.pubkey(), 200_000_000);
     let provider_token_account =
-        common::create_token_account(&mut svm, &usdc_mint, &provider_auth.pubkey(), 0);
+        common::create_token_account(&mut svm, &usdc_mint, &provider_auth.pubkey(), 10_000_000);
 
     let check_in = now + 5 * SECONDS_PER_DAY;
     let check_out = check_in + 2 * SECONDS_PER_DAY;

@@ -39,3 +39,22 @@ pub fn handler_cpi_update_judge_stake(
     judge.is_active_in_pool = judge.staked_amount > 0;
     Ok(())
 }
+
+/// Sole responsability is to update freezed_stake because we are only extracting stake from freezed stake
+/// This also allow us to block funds that are going to be slashed
+pub fn handler_cpi_update_judge_freeze_stake(
+    ctx: Context<CpiUpdateJudgeStake>,
+    amount: u64,
+    is_stake: bool,
+) -> Result<()> {
+    assert_cpi_authority(
+        &ctx.accounts.global_config,
+        &ctx.accounts.cpi_authority.key(),
+        &[AllowedCaller::Treasury, AllowedCaller::Disputes],
+    )?;
+
+    let judge = &mut ctx.accounts.judge;
+    judge.freezed_stake = apply_stake_delta(judge.freezed_stake, amount, is_stake)?;
+
+    Ok(())
+}

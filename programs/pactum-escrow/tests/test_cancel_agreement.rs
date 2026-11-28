@@ -41,8 +41,7 @@ fn cancel_agreement_pre_delivery_refunds_funds_and_records_cancelled_outcome() {
         common::SeedOfferOpts {
             pricing_type: PricingType::Fixed,
             base_price: Some(100_000_000),
-            provider_bond: 10_000_000,
-            required_client_bond: 20_000_000,
+            bond: 10_000_000,
             cancellation_policy: None,
         },
     );
@@ -73,6 +72,7 @@ fn cancel_agreement_pre_delivery_refunds_funds_and_records_cancelled_outcome() {
         &pactum_escrow::instruction::CreateFixedAgreement {
             params: CreateFixedAgreementParams {
                 nonce,
+                milestone_amounts: vec![100_000_000],
                 step_duration_secs: 86_400,
                 deal_contract_hash: None,
                 arbiter: None,

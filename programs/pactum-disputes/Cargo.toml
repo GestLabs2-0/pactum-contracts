@@ -1,0 +1,47 @@
+[package]
+name = "pactum-disputes"
+version = "0.1.0"
+description = "Dispute resolution program for Pactum: P2P settlement, B2B arbiters, and decentralized jury tally/runoff."
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "pactum_disputes"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = [
+    "anchor-lang/idl-build",
+    "anchor-spl/idl-build",
+    "pactum-config/idl-build",
+    "pactum-core/idl-build",
+    "pactum-escrow/idl-build",
+    "pactum-treasury/idl-build",
+]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = { version = "1.0.2" }
+anchor-spl = "1.0.2"
+bytemuck = "1.25.0"
+pactum-config = { path = "../pactum-config", features = ["cpi"] }
+pactum-core = { path = "../pactum-core", features = ["cpi"] }
+pactum-escrow = { path = "../pactum-escrow", features = ["cpi"] }
+pactum-treasury = { path = "../pactum-treasury", features = ["cpi"] }
+
+[dev-dependencies]
+litesvm = "0.12.0"
+solana-account = "3.0.0"
+solana-message = "3.0.1"
+solana-transaction = "3.0.2"
+solana-signer = "3.0.0"
+solana-keypair = "3.0.1"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
