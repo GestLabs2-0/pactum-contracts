@@ -75,4 +75,14 @@ pub mod pactum_disputes {
     ) -> Result<()> {
         handler_fallback_to_integrator(ctx, outcome)
     }
+
+    pub fn tally_or_trigger_runoff<'info>(
+        ctx: Context<'info, TallyOrTriggerRunoff<'info>>,
+    ) -> Result<()> {
+        handler_tally_or_trigger_runoff(ctx)
+    }
+
+    pub fn close_dispute(ctx: Context<CloseDispute>) -> Result<()> {
+        handler_close_dispute(ctx)
+    }
 }
