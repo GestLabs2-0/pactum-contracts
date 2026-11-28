@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constants::{MARKETPLACE_SEED, MAX_MARKETPLACE_NAME_LEN},
+    constants::{MARKETPLACE_SEED, MAX_MARKETPLACE_NAME_LEN, MAX_PERCENTAGE},
     error::PactumCoreError,
     events::MarketplaceCreated,
     state::{DisputeMode, IntegratorPolicy, Marketplace, RoleIdentityConfig, StorageBackend},
@@ -22,6 +22,7 @@ pub struct CreateMarketplaceParams {
     pub max_judge_stake: u64,
     pub min_arbiter_stake: u64,
     pub min_jury_fee: u64,
+    pub provider_cancellation_penalty_pct: u8,
 }
 
 #[derive(Accounts)]
@@ -64,6 +65,10 @@ pub fn handler_create_marketplace(
 
     params.provider_identity.validate()?;
     params.judge_identity.validate()?;
+    require!(
+        params.provider_cancellation_penalty_pct <= MAX_PERCENTAGE,
+        PactumCoreError::InvalidMarketplaceConfig
+    );
 
     let marketplace = &mut ctx.accounts.marketplace;
     marketplace.market_id = market_id;
@@ -80,6 +85,7 @@ pub fn handler_create_marketplace(
     marketplace.max_judge_stake = params.max_judge_stake;
     marketplace.min_arbiter_stake = params.min_arbiter_stake;
     marketplace.min_jury_fee = params.min_jury_fee;
+    marketplace.provider_cancellation_penalty_pct = params.provider_cancellation_penalty_pct;
     marketplace.pool_count = 0;
     marketplace.is_active = true;
     marketplace.bump = ctx.bumps.marketplace;

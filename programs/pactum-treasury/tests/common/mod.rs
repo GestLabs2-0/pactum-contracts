@@ -221,6 +221,7 @@ pub fn seed_marketplace(
         max_judge_stake,
         min_arbiter_stake,
         min_jury_fee: 0,
+        provider_cancellation_penalty_pct: 10,
         pool_count: 1,
         is_active: true,
         bump,
@@ -252,7 +253,6 @@ pub fn seed_judge(
     let um = UserMainAcc {
         authority: *authority,
         sas_attestation: None,
-        is_banned: false,
         bump: um_bump,
     };
     svm.set_account(

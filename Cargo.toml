@@ -1,5 +1,5 @@
 [workspace]
-members = ["programs/pactum-config", "programs/pactum-core", "programs/pactum-treasury"]
+members = ["programs/pactum-config", "programs/pactum-core", "programs/pactum-treasury", "programs/pactum-escrow"]
 resolver = "2"
 
 [profile.release]

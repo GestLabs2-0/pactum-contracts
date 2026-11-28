@@ -248,6 +248,7 @@ fn apply_as_arbiter_enforces_marketplace_kyb_credential() {
                 max_judge_stake: 0,
                 min_arbiter_stake: 500,
                 min_jury_fee: 0,
+                provider_cancellation_penalty_pct: 10,
             },
         }
         .data(),

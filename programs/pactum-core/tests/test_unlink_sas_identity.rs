@@ -34,7 +34,6 @@ fn seed_linked_user_main(
     let user_main = UserMainAcc {
         authority: user.pubkey(),
         sas_attestation: Some(sas_attestation),
-        is_banned: false,
         bump,
     };
     svm.set_account(

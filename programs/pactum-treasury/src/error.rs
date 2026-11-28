@@ -20,9 +20,6 @@ pub enum PactumTreasuryError {
     #[msg("Amount must be greater than zero")]
     ZeroAmount,
 
-    #[msg("User is globally banned")]
-    UserGloballyBanned,
-
     #[msg("Judge is locally banned in this marketplace")]
     JudgeBanned,
 

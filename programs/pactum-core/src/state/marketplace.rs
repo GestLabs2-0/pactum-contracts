@@ -92,6 +92,8 @@ pub struct Marketplace {
     pub min_arbiter_stake: u64,
     /// Min jury fee to stablish for an agreement which requires a jury
     pub min_jury_fee: u64,
+    /// Percentage (0..=100) of provider bond slashed on late provider cancellation
+    pub provider_cancellation_penalty_pct: u8,
     /// How many pools of judges are there
     pub pool_count: u16,
     /// Is market active?
@@ -125,10 +127,6 @@ impl Marketplace {
         require!(
             self.is_active,
             crate::error::PactumCoreError::MarketplaceInactive
-        );
-        require!(
-            !user_main.is_banned,
-            crate::error::PactumCoreError::UserGloballyBanned
         );
         match role_cfg.policy {
             IdentityPolicy::None => Ok(()),

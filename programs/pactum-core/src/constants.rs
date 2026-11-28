@@ -37,3 +37,5 @@ pub const INTEGRATOR_APP_SEED: &str = "integrator_app";
 pub const INTEGRATOR_SEED: &str = "integrator";
 
 pub const MAX_MARKETPLACE_NAME_LEN: usize = 30;
+
+pub const MAX_PERCENTAGE: u8 = 100;

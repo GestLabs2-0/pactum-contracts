@@ -201,6 +201,7 @@ pub fn create_marketplace_account(
                 max_judge_stake: 1000,
                 min_arbiter_stake: 500,
                 min_jury_fee: 2_000_000,
+                provider_cancellation_penalty_pct: 10,
             },
         }
         .data(),
@@ -282,6 +283,7 @@ pub fn create_offer_account(
                 required_client_bond: 0,
                 jury_fee: 2_500_000,
                 default_arbiter: None,
+                cancellation_policy: None,
                 content_ref: [1u8; 32],
                 state_hash: [2u8; 32],
             },

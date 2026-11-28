@@ -26,4 +26,9 @@ ignore = [
     # Solo como dependencia transitiva dev vía ark-* → agave → litesvm (tests locales)
     # Advisory: https://rustsec.org/advisories/RUSTSEC-2024-0436
     'RUSTSEC-2024-0436',
+
+    # crypto-bigint v0.5.5 — pinned by elliptic-curve v0.13.8 (k256 -> solana-secp256k1-recover)
+    # Dev-only transitive dependency of litesvm (local tests, never on-chain)
+    # Advisory: https://rustsec.org/advisories/RUSTSEC-2026-0387
+    'RUSTSEC-2026-0387',
 ]
