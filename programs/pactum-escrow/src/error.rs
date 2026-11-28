@@ -165,4 +165,8 @@ pub enum PactumEscrowError {
     /// Dispute settlement splits exceed remaining vault balance.
     #[msg("Invalid dispute settlement splits")]
     InvalidSettlementSplit,
+
+    /// Client can not make an agreement for itself
+    #[msg("Client or provider can make an agreement for itself")]
+    InvalidSelfAgreement,
 }

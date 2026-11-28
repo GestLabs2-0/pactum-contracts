@@ -71,6 +71,7 @@ fn submit_milestone_stores_deliverable_before_deadline_and_rejects_late() {
         &pactum_escrow::instruction::CreateFixedAgreement {
             params: CreateFixedAgreementParams {
                 nonce,
+                milestone_amounts: vec![100_000_000],
                 step_duration_secs: 86_400,
                 deal_contract_hash: None,
                 arbiter: None,

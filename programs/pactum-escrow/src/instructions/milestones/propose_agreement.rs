@@ -7,11 +7,11 @@ use pactum_core::{
 };
 
 use crate::{
-    constants::{AGREEMENT_SEED, ESCROW_CONFIG_SEED, ESCROW_VAULT_SEED, MAX_MILESTONES},
+    constants::{AGREEMENT_SEED, ESCROW_CONFIG_SEED, ESCROW_VAULT_SEED},
     error::PactumEscrowError,
     events::AgreementProposed,
     state::{Agreement, AgreementStatus, EscrowConfig},
-    utils::{resolve_integrator, transfer_from_user},
+    utils::{resolve_integrator, transfer_from_user, validate_milestones},
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
@@ -59,6 +59,7 @@ pub struct ProposeAgreement<'info> {
         bump = provider.bump,
         seeds::program = pactum_core::ID,
         constraint = provider.authority == provider_authority.key() @ PactumEscrowError::Unauthorized,
+        constraint = provider.authority != client.authority @ PactumEscrowError::InvalidSelfAgreement,
         constraint = !provider.is_banned @ PactumEscrowError::ParticipantBanned,
     )]
     pub provider: Box<Account<'info, Provider>>,
@@ -129,20 +130,8 @@ pub fn handler_propose_agreement(
     ctx: Context<ProposeAgreement>,
     params: ProposeAgreementParams,
 ) -> Result<()> {
-    require!(
-        !params.milestone_amounts.is_empty()
-            && params.milestone_amounts.len() <= MAX_MILESTONES
-            && params.step_duration_secs > 0,
-        PactumEscrowError::InvalidMilestones
-    );
-
-    let mut total_amount: u64 = 0;
-    for &amt in &params.milestone_amounts {
-        require!(amt > 0, PactumEscrowError::InvalidMilestones);
-        total_amount = total_amount
-            .checked_add(amt)
-            .ok_or(PactumEscrowError::MathOverflow)?;
-    }
+    let total_amount =
+        validate_milestones(&params.milestone_amounts, params.step_duration_secs)?;
 
     let offer = &ctx.accounts.offer;
     let (integrator, integrator_fee_bps) =

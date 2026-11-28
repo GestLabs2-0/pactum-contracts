@@ -72,6 +72,7 @@ fn provider_accept_agreement_deposits_bond_and_starts_deadline_clock() {
         &pactum_escrow::instruction::CreateFixedAgreement {
             params: CreateFixedAgreementParams {
                 nonce,
+                milestone_amounts: vec![100_000_000],
                 step_duration_secs: 86_400,
                 deal_contract_hash: Some(contract_hash),
                 arbiter: None,

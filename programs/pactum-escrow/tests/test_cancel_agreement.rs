@@ -73,6 +73,7 @@ fn cancel_agreement_pre_delivery_refunds_funds_and_records_cancelled_outcome() {
         &pactum_escrow::instruction::CreateFixedAgreement {
             params: CreateFixedAgreementParams {
                 nonce,
+                milestone_amounts: vec![100_000_000],
                 step_duration_secs: 86_400,
                 deal_contract_hash: None,
                 arbiter: None,

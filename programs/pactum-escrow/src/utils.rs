@@ -7,8 +7,8 @@ use anchor_spl::token_interface::{
 use crate::{
     constants::{
         BPS_DENOMINATOR, CPI_AUTHORITY_SEED, DEFAULT_CANCELLATION_WINDOW_HOURS,
-        DEFAULT_CLIENT_REFUND_PCT, ESCROW_VAULT_SEED, PERCENTAGE_DENOMINATOR, SECONDS_PER_DAY,
-        SECONDS_PER_HOUR,
+        DEFAULT_CLIENT_REFUND_PCT, ESCROW_VAULT_SEED, MAX_MILESTONES, PERCENTAGE_DENOMINATOR,
+        SECONDS_PER_DAY, SECONDS_PER_HOUR,
     },
     error::PactumEscrowError,
     events::{
@@ -1081,4 +1081,25 @@ fn update_days_cross_years(
     }
 
     Ok(())
+}
+
+/// Validates milestone amounts (`1..=MAX_MILESTONES`, each `> 0`) and `step_duration_secs > 0`,
+/// returning the checked sum of all milestone amounts.
+pub fn validate_milestones(milestone_amounts: &[u64], step_duration_secs: i64) -> Result<u64> {
+    require!(
+        !milestone_amounts.is_empty()
+            && milestone_amounts.len() <= MAX_MILESTONES
+            && step_duration_secs > 0,
+        PactumEscrowError::InvalidMilestones
+    );
+
+    let mut total_amount: u64 = 0;
+    for &amt in milestone_amounts {
+        require!(amt > 0, PactumEscrowError::InvalidMilestones);
+        total_amount = total_amount
+            .checked_add(amt)
+            .ok_or(PactumEscrowError::MathOverflow)?;
+    }
+
+    Ok(total_amount)
 }

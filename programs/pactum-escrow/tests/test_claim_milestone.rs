@@ -75,6 +75,7 @@ fn claim_milestone_releases_after_approval_window_and_rejects_early() {
         &pactum_escrow::instruction::CreateFixedAgreement {
             params: CreateFixedAgreementParams {
                 nonce,
+                milestone_amounts: vec![100_000_000],
                 step_duration_secs: 86_400,
                 deal_contract_hash: None,
                 arbiter: None,

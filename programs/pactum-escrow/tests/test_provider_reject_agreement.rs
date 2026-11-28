@@ -68,6 +68,7 @@ fn provider_reject_agreement_refunds_client_and_closes_accounts_to_rent_payer() 
         &pactum_escrow::instruction::CreateFixedAgreement {
             params: CreateFixedAgreementParams {
                 nonce,
+                milestone_amounts: vec![100_000_000],
                 step_duration_secs: 86_400,
                 deal_contract_hash: None,
                 arbiter: None,

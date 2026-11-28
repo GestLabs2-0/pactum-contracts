@@ -11,12 +11,13 @@ use crate::{
     error::PactumEscrowError,
     events::AgreementCreated,
     state::{Agreement, AgreementStatus, EscrowConfig},
-    utils::{resolve_integrator, transfer_from_user},
+    utils::{resolve_integrator, transfer_from_user, validate_milestones},
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub struct CreateFixedAgreementParams {
     pub nonce: u64,
+    pub milestone_amounts: Vec<u64>,
     pub step_duration_secs: i64,
     pub deal_contract_hash: Option<[u8; 32]>,
     pub arbiter: Option<Pubkey>,
@@ -58,6 +59,7 @@ pub struct CreateFixedAgreement<'info> {
         bump = client.bump,
         seeds::program = pactum_core::ID,
         constraint = client.authority == client_authority.key() @ PactumEscrowError::Unauthorized,
+        constraint = provider.authority != client.authority @ PactumEscrowError::InvalidSelfAgreement,
         constraint = !client.is_banned @ PactumEscrowError::ParticipantBanned,
     )]
     pub client: Box<Account<'info, Client>>,
@@ -88,7 +90,7 @@ pub struct CreateFixedAgreement<'info> {
     #[account(
         init,
         payer = payer,
-        space = Agreement::space(1),
+        space = Agreement::space(params.milestone_amounts.len()),
         seeds = [
             AGREEMENT_SEED.as_bytes(),
             offer.key().as_ref(),
@@ -128,15 +130,17 @@ pub fn handler_create_fixed_agreement(
     ctx: Context<CreateFixedAgreement>,
     params: CreateFixedAgreementParams,
 ) -> Result<()> {
-    require!(
-        params.step_duration_secs > 0,
-        PactumEscrowError::InvalidMilestones
-    );
+    let total_amount =
+        validate_milestones(&params.milestone_amounts, params.step_duration_secs)?;
     let offer = &ctx.accounts.offer;
-    let total_amount = offer
+    let base_price = offer
         .base_price
         .ok_or(PactumEscrowError::InvalidOfferParams)?;
-    require!(total_amount > 0, PactumEscrowError::ZeroAmount);
+    require!(base_price > 0, PactumEscrowError::ZeroAmount);
+    require!(
+        total_amount == base_price,
+        PactumEscrowError::InvalidMilestones
+    );
 
     let (integrator, integrator_fee_bps) =
         resolve_integrator(&ctx.accounts.integrator, ctx.accounts.marketplace.key())?;
@@ -168,7 +172,7 @@ pub fn handler_create_fixed_agreement(
     agreement.provider_bond = offer.provider_bond;
     agreement.client_bond = client_bond;
     agreement.released_amount = 0;
-    agreement.milestone_amounts = vec![total_amount];
+    agreement.milestone_amounts = params.milestone_amounts;
     agreement.completed_milestones = 0;
     agreement.step_duration_secs = params.step_duration_secs;
     agreement.current_deadline_ts = 0;
