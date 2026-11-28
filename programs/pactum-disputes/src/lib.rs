@@ -42,4 +42,15 @@ pub mod pactum_disputes {
     pub fn link_evidence(ctx: Context<LinkEvidence>, evidence_hash: [u8; 32]) -> Result<()> {
         handler_link_evidence(ctx, evidence_hash)
     }
+
+    pub fn solve_p2p_agreement(
+        ctx: Context<SolveP2pAgreement>,
+        params: SolveP2pParams,
+    ) -> Result<()> {
+        handler_solve_p2p_agreement(ctx, params)
+    }
+
+    pub fn escalate_dispute(ctx: Context<EscalateDispute>) -> Result<()> {
+        handler_escalate_dispute(ctx)
+    }
 }
