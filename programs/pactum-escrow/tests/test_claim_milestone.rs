@@ -32,9 +32,9 @@ fn claim_milestone_releases_after_approval_window_and_rejects_early() {
     common::warp_to_ts(&mut svm, 1_000_000);
 
     let market_pda = common::seed_marketplace(&mut svm, 1);
-    let (client_pda, client_user_main_pda) =
+    let (client_pda, _client_user_main_pda) =
         common::seed_client(&mut svm, market_pda, &client_auth.pubkey());
-    let (provider_pda, provider_user_main_pda) =
+    let (provider_pda, _provider_user_main_pda) =
         common::seed_provider(&mut svm, market_pda, &provider_auth.pubkey());
     let offer_pda = common::seed_offer(
         &mut svm,
@@ -87,9 +87,7 @@ fn claim_milestone_releases_after_approval_window_and_rejects_early() {
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
             marketplace: market_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             offer: offer_pda,
             integrator: None,
@@ -114,7 +112,6 @@ fn claim_milestone_releases_after_approval_window_and_rejects_early() {
             provider_authority: provider_auth.pubkey(),
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             agreement: agreement_pda,
             escrow_vault: escrow_vault_pda,
@@ -134,7 +131,6 @@ fn claim_milestone_releases_after_approval_window_and_rejects_early() {
         .data(),
         pactum_escrow::accounts::SubmitMilestone {
             provider_authority: provider_auth.pubkey(),
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             agreement: agreement_pda,
         }
@@ -150,9 +146,7 @@ fn claim_milestone_releases_after_approval_window_and_rejects_early() {
             caller: crank.pubkey(),
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             integrator: None,
             agreement: agreement_pda,
@@ -180,9 +174,7 @@ fn claim_milestone_releases_after_approval_window_and_rejects_early() {
             caller: crank.pubkey(),
             escrow_config: escrow_config_pda,
             global_config: global_config_pda,
-            client_user_main: client_user_main_pda,
             client: client_pda,
-            provider_user_main: provider_user_main_pda,
             provider: provider_pda,
             integrator: None,
             agreement: agreement_pda,

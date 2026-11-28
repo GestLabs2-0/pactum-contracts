@@ -404,7 +404,7 @@ pub fn init_reservation_state<'info>(
     reservation.client_bond = offer.required_client_bond;
     reservation.cancellation_policy = policy;
     reservation.provider_cancellation_penalty_pct = marketplace.provider_cancellation_penalty_pct;
-    reservation.state_hash = offer.state_hash;
+    reservation.content_ref = offer.content_ref;
     reservation.status = DateRangeStatus::Pending;
     reservation.previous_status = None;
     reservation.updated_at = now;

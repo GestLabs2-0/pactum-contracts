@@ -32,7 +32,7 @@ pub struct DateRangeAgreement {
     pub client_bond: u64,
     pub cancellation_policy: CancellationPolicy,
     pub provider_cancellation_penalty_pct: u8,
-    pub state_hash: [u8; 32],
+    pub content_ref: [u8; 32],
     pub status: DateRangeStatus,
     pub previous_status: Option<DateRangeStatus>,
     pub updated_at: i64,

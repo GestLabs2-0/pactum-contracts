@@ -39,7 +39,6 @@ pub struct Offer {
     pub default_arbiter: Option<Pubkey>,
     pub cancellation_policy: Option<CancellationPolicy>,
     pub content_ref: [u8; 32],
-    pub state_hash: [u8; 32],
     pub is_active: bool,
     pub rent_payer: Pubkey,
     pub bump: u8,

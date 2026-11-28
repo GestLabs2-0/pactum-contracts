@@ -36,7 +36,7 @@ pub struct Agreement {
     pub submitted_at: i64,
     pub completed_at: i64,
     pub deliverable_hash: [u8; 32],
-    pub state_hash: [u8; 32],
+    pub content_ref: [u8; 32],
     pub deal_contract_hash: Option<[u8; 32]>,
     pub status: AgreementStatus,
     pub previous_status: Option<AgreementStatus>,
@@ -72,7 +72,7 @@ impl Agreement {
         + 8 // submitted_at
         + 8 // completed_at
         + 32 // deliverable_hash
-        + 32 // state_hash
+        + 32 // content_ref
         + 1 + 32 // deal_contract_hash: Option<[u8; 32]>
         + 1 // status
         + 1 + 1 // previous_status: Option<AgreementStatus>

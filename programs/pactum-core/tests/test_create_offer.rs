@@ -111,14 +111,12 @@ fn create_offer_sets_cancellation_policy_and_rejects_pct_over_100() {
                 default_arbiter: None,
                 cancellation_policy: Some(policy),
                 content_ref: [1u8; 32],
-                state_hash: [2u8; 32],
             },
         }
         .data(),
         pactum_core::accounts::CreateOffer {
             offer: offer_pda,
             provider: provider_pda,
-            user_main: user_main_pda,
             marketplace: market_pda,
             authority: provider_auth.pubkey(),
             payer: provider_auth.pubkey(),
@@ -156,14 +154,12 @@ fn create_offer_sets_cancellation_policy_and_rejects_pct_over_100() {
                     client_refund_pct: 101,
                 }),
                 content_ref: [1u8; 32],
-                state_hash: [2u8; 32],
             },
         }
         .data(),
         pactum_core::accounts::CreateOffer {
             offer: bad_offer_pda,
             provider: provider_pda,
-            user_main: user_main_pda,
             marketplace: market_pda,
             authority: provider_auth.pubkey(),
             payer: provider_auth.pubkey(),

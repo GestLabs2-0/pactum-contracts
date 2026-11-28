@@ -18,7 +18,7 @@ pub struct MarketplaceUpdated {
 #[event]
 pub struct LocalBanUpdated {
     pub marketplace: Pubkey,
-    pub user_main: Pubkey,
+    pub authority: Pubkey,
     pub role: ParticipantRole,
     pub is_banned: bool,
 }
@@ -55,7 +55,7 @@ pub struct IntegratorReviewed {
 #[event]
 pub struct RoleReviewRecorded {
     pub marketplace: Pubkey,
-    pub user_main: Pubkey,
+    pub authority: Pubkey,
     pub role: ParticipantRole,
     pub score: u8,
     pub total_reviews: u32,

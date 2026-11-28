@@ -30,7 +30,7 @@ fn init_judge_rejected_on_arbiter_only_marketplace() {
     let (mut svm, global_config_pda, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
     svm.airdrop(&payer.pubkey(), 10_000_000_000).unwrap();
 
-    let user_main_pda = common::create_user_main(&mut svm, &user, &payer);
+    let _user_main_pda = common::create_user_main(&mut svm, &user, &payer);
     let market_pda = common::create_marketplace_account(
         &mut svm,
         1,
@@ -43,7 +43,7 @@ fn init_judge_rejected_on_arbiter_only_marketplace() {
         &[
             JUDGE_SEED.as_bytes(),
             market_pda.as_ref(),
-            user_main_pda.as_ref(),
+            user.pubkey().as_ref(),
         ],
         &pactum_core::id(),
     );
@@ -54,7 +54,7 @@ fn init_judge_rejected_on_arbiter_only_marketplace() {
         pactum_core::accounts::InitJudge {
             judge: judge_pda,
             marketplace: market_pda,
-            user_main: user_main_pda,
+            user_main: None,
             global_config: global_config_pda,
             marketplace_attestation: None,
             marketplace_credential: None,
@@ -75,7 +75,7 @@ fn init_judge_succeeds_on_decentralized_jury_marketplace() {
     let (mut svm, global_config_pda, _) = common::setup_svm(Pubkey::new_unique(), admin.pubkey());
     svm.airdrop(&payer.pubkey(), 10_000_000_000).unwrap();
 
-    let user_main_pda = common::create_user_main(&mut svm, &user, &payer);
+    let _user_main_pda = common::create_user_main(&mut svm, &user, &payer);
     let market_pda = common::create_marketplace_account(
         &mut svm,
         2,
@@ -88,7 +88,7 @@ fn init_judge_succeeds_on_decentralized_jury_marketplace() {
         &[
             JUDGE_SEED.as_bytes(),
             market_pda.as_ref(),
-            user_main_pda.as_ref(),
+            user.pubkey().as_ref(),
         ],
         &pactum_core::id(),
     );
@@ -99,7 +99,7 @@ fn init_judge_succeeds_on_decentralized_jury_marketplace() {
         pactum_core::accounts::InitJudge {
             judge: judge_pda,
             marketplace: market_pda,
-            user_main: user_main_pda,
+            user_main: None,
             global_config: global_config_pda,
             marketplace_attestation: None,
             marketplace_credential: None,
@@ -283,7 +283,7 @@ fn init_judge_blocks_base_kyc_bypass_and_requires_judge_credential() {
         &[
             JUDGE_SEED.as_bytes(),
             market_pda.as_ref(),
-            user_main_pda.as_ref(),
+            user.pubkey().as_ref(),
         ],
         &pactum_core::id(),
     );
@@ -295,7 +295,7 @@ fn init_judge_blocks_base_kyc_bypass_and_requires_judge_credential() {
         pactum_core::accounts::InitJudge {
             judge: judge_pda,
             marketplace: market_pda,
-            user_main: user_main_pda,
+            user_main: Some(user_main_pda),
             global_config: global_config_pda,
             marketplace_attestation: Some(base_att),
             marketplace_credential: Some(base_cred),
@@ -314,7 +314,7 @@ fn init_judge_blocks_base_kyc_bypass_and_requires_judge_credential() {
         pactum_core::accounts::InitJudge {
             judge: judge_pda,
             marketplace: market_pda,
-            user_main: user_main_pda,
+            user_main: Some(user_main_pda),
             global_config: global_config_pda,
             marketplace_attestation: Some(judge_att),
             marketplace_credential: Some(judge_cred),

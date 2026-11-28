@@ -1,12 +1,10 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constants::{OFFER_SEED, PROVIDER_SEED, USER_MAIN_SEED},
+    constants::{OFFER_SEED, PROVIDER_SEED},
     error::PactumCoreError,
     events::OfferCreated,
-    state::{
-        CancellationPolicy, DisputeMode, Marketplace, Offer, PricingType, Provider, UserMainAcc,
-    },
+    state::{CancellationPolicy, DisputeMode, Marketplace, Offer, PricingType, Provider},
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
@@ -20,7 +18,6 @@ pub struct CreateOfferParams {
     pub default_arbiter: Option<Pubkey>,
     pub cancellation_policy: Option<CancellationPolicy>,
     pub content_ref: [u8; 32],
-    pub state_hash: [u8; 32],
 }
 
 #[derive(Accounts)]
@@ -40,20 +37,13 @@ pub struct CreateOffer<'info> {
 
     #[account(
         mut,
-        seeds = [PROVIDER_SEED.as_bytes(), marketplace.key().as_ref(), user_main.key().as_ref()],
+        seeds = [PROVIDER_SEED.as_bytes(), marketplace.key().as_ref(), authority.key().as_ref()],
         bump = provider.bump,
         has_one = marketplace,
-        has_one = user_main,
+        has_one = authority @ PactumCoreError::Unauthorized,
         constraint = !provider.is_banned @ PactumCoreError::ParticipantLocallyBanned,
     )]
     pub provider: Account<'info, Provider>,
-
-    #[account(
-        seeds = [USER_MAIN_SEED.as_bytes(), authority.key().as_ref()],
-        bump = user_main.bump,
-        has_one = authority @ PactumCoreError::Unauthorized,
-    )]
-    pub user_main: Account<'info, UserMainAcc>,
 
     #[account(constraint = marketplace.is_active @ PactumCoreError::MarketplaceInactive)]
     pub marketplace: Account<'info, Marketplace>,
@@ -104,7 +94,6 @@ pub fn handler_create_offer(ctx: Context<CreateOffer>, params: CreateOfferParams
     offer.default_arbiter = params.default_arbiter;
     offer.cancellation_policy = params.cancellation_policy;
     offer.content_ref = params.content_ref;
-    offer.state_hash = params.state_hash;
     offer.is_active = true;
     offer.rent_payer = ctx.accounts.payer.key();
     offer.bump = ctx.bumps.offer;

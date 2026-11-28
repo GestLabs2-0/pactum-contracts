@@ -13,7 +13,7 @@ pub struct InitJudge<'info> {
         init,
         payer = payer,
         space = 8 + Judge::INIT_SPACE,
-        seeds = [JUDGE_SEED.as_bytes(), marketplace.key().as_ref(), user_main.key().as_ref()],
+        seeds = [JUDGE_SEED.as_bytes(), marketplace.key().as_ref(), authority.key().as_ref()],
         bump,
     )]
     pub judge: Account<'info, Judge>,
@@ -25,7 +25,7 @@ pub struct InitJudge<'info> {
         bump = user_main.bump,
         has_one = authority @ PactumCoreError::Unauthorized,
     )]
-    pub user_main: Account<'info, UserMainAcc>,
+    pub user_main: Option<Account<'info, UserMainAcc>>,
 
     #[account(
         seeds = [GLOBAL_CONFIG_SEED.as_bytes()],
@@ -57,7 +57,8 @@ pub fn handler_init_judge(ctx: Context<InitJudge>) -> Result<()> {
         .map(|(a, c)| (a.as_ref(), c.as_ref()));
 
     ctx.accounts.marketplace.assert_role_eligible(
-        &ctx.accounts.user_main,
+        ctx.accounts.user_main.as_deref(),
+        ctx.accounts.authority.key(),
         &ctx.accounts.marketplace.judge_identity,
         ctx.accounts.global_config.sas_program,
         marketplace_sas,
@@ -69,7 +70,7 @@ pub fn handler_init_judge(ctx: Context<InitJudge>) -> Result<()> {
 
     let judge = &mut ctx.accounts.judge;
     judge.marketplace = ctx.accounts.marketplace.key();
-    judge.user_main = ctx.accounts.user_main.key();
+    judge.authority = ctx.accounts.authority.key();
     judge.staked_amount = 0;
     judge.pool_id = 0;
     judge.leaf_index = 0;

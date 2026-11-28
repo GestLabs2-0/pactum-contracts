@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use pactum_config::{GlobalConfig, GLOBAL_CONFIG_SEED};
 use pactum_core::program::PactumCore;
-use pactum_core::state::{Client, IntegratorProfile, Provider, UserMainAcc};
+use pactum_core::state::{Client, IntegratorProfile, Provider};
 
 use crate::{
     constants::{
@@ -34,22 +34,12 @@ pub struct ClientCancelReservationCrossYear<'info> {
     pub global_config: Box<Account<'info, GlobalConfig>>,
 
     #[account(
-        constraint = client_user_main.authority == client_authority.key() @ PactumEscrowError::Unauthorized,
-    )]
-    pub client_user_main: Box<Account<'info, UserMainAcc>>,
-
-    #[account(
         mut,
-        constraint = client.user_main == client_user_main.key() @ PactumEscrowError::Unauthorized,
+        constraint = client.authority == client_authority.key() @ PactumEscrowError::Unauthorized,
     )]
     pub client: Box<Account<'info, Client>>,
 
-    pub provider_user_main: Box<Account<'info, UserMainAcc>>,
-
-    #[account(
-        mut,
-        constraint = provider.user_main == provider_user_main.key() @ PactumEscrowError::Unauthorized,
-    )]
+    #[account(mut)]
     pub provider: Box<Account<'info, Provider>>,
 
     pub integrator: Option<Box<Account<'info, IntegratorProfile>>>,
@@ -92,14 +82,14 @@ pub struct ClientCancelReservationCrossYear<'info> {
     #[account(
         mut,
         constraint = client_token_account.mint == global_config.usdc_mint @ PactumEscrowError::InvalidTokenMint,
-        constraint = client_token_account.owner == client_user_main.authority @ PactumEscrowError::Unauthorized,
+        constraint = client_token_account.owner == client.authority @ PactumEscrowError::Unauthorized,
     )]
     pub client_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
         constraint = provider_token_account.mint == global_config.usdc_mint @ PactumEscrowError::InvalidTokenMint,
-        constraint = provider_token_account.owner == provider_user_main.authority @ PactumEscrowError::Unauthorized,
+        constraint = provider_token_account.owner == provider.authority @ PactumEscrowError::Unauthorized,
     )]
     pub provider_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 

@@ -37,7 +37,7 @@ pub fn handler_cpi_update_role_review(
     )?;
     require!((1..=5).contains(&score), PactumCoreError::InvalidScore);
 
-    let (marketplace, user_main, total_reviews) = match role {
+    let (marketplace, authority, total_reviews) = match role {
         ParticipantRole::Client => {
             let client = ctx
                 .accounts
@@ -52,7 +52,7 @@ pub fn handler_cpi_update_role_review(
                 .total_score
                 .checked_add(score as u64)
                 .ok_or(PactumCoreError::MathOverflow)?;
-            (client.marketplace, client.user_main, client.total_reviews)
+            (client.marketplace, client.authority, client.total_reviews)
         }
         ParticipantRole::Provider => {
             let provider = ctx
@@ -70,7 +70,7 @@ pub fn handler_cpi_update_role_review(
                 .ok_or(PactumCoreError::MathOverflow)?;
             (
                 provider.marketplace,
-                provider.user_main,
+                provider.authority,
                 provider.total_reviews,
             )
         }
@@ -81,7 +81,7 @@ pub fn handler_cpi_update_role_review(
 
     emit!(RoleReviewRecorded {
         marketplace,
-        user_main,
+        authority,
         role,
         score,
         total_reviews,

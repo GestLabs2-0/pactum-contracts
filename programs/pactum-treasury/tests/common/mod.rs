@@ -271,13 +271,13 @@ pub fn seed_judge(
         &[
             JUDGE_SEED.as_bytes(),
             market_pda.as_ref(),
-            user_main_pda.as_ref(),
+            authority.as_ref(),
         ],
         &core_id,
     );
     let judge = Judge {
         marketplace: *market_pda,
-        user_main: user_main_pda,
+        authority: *authority,
         staked_amount,
         pool_id: 0,
         leaf_index: 0,

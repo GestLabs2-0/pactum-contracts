@@ -13,7 +13,7 @@ pub struct InitProvider<'info> {
         init,
         payer = payer,
         space = 8 + Provider::INIT_SPACE,
-        seeds = [PROVIDER_SEED.as_bytes(), marketplace.key().as_ref(), user_main.key().as_ref()],
+        seeds = [PROVIDER_SEED.as_bytes(), marketplace.key().as_ref(), authority.key().as_ref()],
         bump,
     )]
     pub provider: Account<'info, Provider>,
@@ -25,7 +25,7 @@ pub struct InitProvider<'info> {
         bump = user_main.bump,
         has_one = authority @ PactumCoreError::Unauthorized,
     )]
-    pub user_main: Account<'info, UserMainAcc>,
+    pub user_main: Option<Account<'info, UserMainAcc>>,
 
     #[account(
         seeds = [GLOBAL_CONFIG_SEED.as_bytes()],
@@ -57,7 +57,8 @@ pub fn handler_init_provider(ctx: Context<InitProvider>) -> Result<()> {
         .map(|(a, c)| (a.as_ref(), c.as_ref()));
 
     ctx.accounts.marketplace.assert_role_eligible(
-        &ctx.accounts.user_main,
+        ctx.accounts.user_main.as_deref(),
+        ctx.accounts.authority.key(),
         &ctx.accounts.marketplace.provider_identity,
         ctx.accounts.global_config.sas_program,
         marketplace_sas,
@@ -65,7 +66,7 @@ pub fn handler_init_provider(ctx: Context<InitProvider>) -> Result<()> {
 
     let provider = &mut ctx.accounts.provider;
     provider.marketplace = ctx.accounts.marketplace.key();
-    provider.user_main = ctx.accounts.user_main.key();
+    provider.authority = ctx.accounts.authority.key();
     provider.is_banned = false;
     provider.offer_count = 0;
     provider.completed_agreements = 0;

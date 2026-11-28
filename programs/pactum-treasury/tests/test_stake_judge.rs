@@ -21,8 +21,7 @@ fn stake_judge_transfers_usdc_and_updates_core_via_cpi() {
 
     let market_pda = common::seed_marketplace(&mut svm, 1, 100_000, 1_000_000, 500_000);
     let judge_vault_pda = common::judge_vault_pda(&market_pda);
-    let (user_main_pda, judge_pda) =
-        common::seed_judge(&mut svm, &judge_auth.pubkey(), &market_pda, 0, 0);
+    let (_, judge_pda) = common::seed_judge(&mut svm, &judge_auth.pubkey(), &market_pda, 0, 0);
     let user_token =
         common::create_token_account(&mut svm, &usdc_mint, &judge_auth.pubkey(), 500_000);
     let (cpi_authority, _) =
@@ -38,7 +37,6 @@ fn stake_judge_transfers_usdc_and_updates_core_via_cpi() {
         .data(),
         pactum_treasury::accounts::StakeJudge {
             authority: judge_auth.pubkey(),
-            user_main: user_main_pda,
             marketplace: market_pda,
             judge: judge_pda,
             config: treasury_config_pda,
@@ -77,8 +75,7 @@ fn stake_judge_rejects_above_max_judge_stake() {
 
     let market_pda = common::seed_marketplace(&mut svm, 1, 100_000, 500_000, 500_000);
     let judge_vault_pda = common::judge_vault_pda(&market_pda);
-    let (user_main_pda, judge_pda) =
-        common::seed_judge(&mut svm, &judge_auth.pubkey(), &market_pda, 0, 0);
+    let (_, judge_pda) = common::seed_judge(&mut svm, &judge_auth.pubkey(), &market_pda, 0, 0);
     let user_token =
         common::create_token_account(&mut svm, &usdc_mint, &judge_auth.pubkey(), 1_000_000);
     let (cpi_authority, _) =
@@ -94,7 +91,6 @@ fn stake_judge_rejects_above_max_judge_stake() {
         .data(),
         pactum_treasury::accounts::StakeJudge {
             authority: judge_auth.pubkey(),
-            user_main: user_main_pda,
             marketplace: market_pda,
             judge: judge_pda,
             config: treasury_config_pda,

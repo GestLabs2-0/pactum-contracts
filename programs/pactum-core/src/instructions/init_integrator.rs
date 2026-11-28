@@ -51,11 +51,10 @@ pub fn handler_init_integrator(ctx: Context<InitIntegrator>, default_fee_bps: u1
         PactumCoreError::InvalidIntegratorParams
     );
 
-    if let Some(user_main) = ctx.accounts.user_main.as_ref() {
-        ctx.accounts.marketplace.assert_client_eligible(user_main)?;
-    } else if ctx.accounts.marketplace.client_requires_kyc {
-        return err!(PactumCoreError::IdentityRequired);
-    }
+    ctx.accounts.marketplace.assert_client_eligible(
+        ctx.accounts.user_main.as_deref(),
+        ctx.accounts.authority.key(),
+    )?;
 
     let profile = &mut ctx.accounts.integrator_profile;
     profile.marketplace = ctx.accounts.marketplace.key();

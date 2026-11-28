@@ -30,7 +30,7 @@ fn wallet_cannot_call_cpi_update_judge_stake() {
     );
     let judge = Judge {
         marketplace: Pubkey::new_unique(),
-        user_main: Pubkey::new_unique(),
+        authority: Pubkey::new_unique(),
         staked_amount: 100,
         pool_id: 0,
         leaf_index: 0,

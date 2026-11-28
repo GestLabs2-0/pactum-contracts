@@ -266,13 +266,13 @@ pub fn seed_client(svm: &mut LiteSVM, market_pda: Pubkey, authority: &Pubkey) ->
         &[
             CLIENT_SEED.as_bytes(),
             market_pda.as_ref(),
-            user_main_pda.as_ref(),
+            authority.as_ref(),
         ],
         &core_id,
     );
     let client = Client {
         marketplace: market_pda,
-        user_main: user_main_pda,
+        authority: *authority,
         is_banned: false,
         completed_agreements: 0,
         cancelled_agreements: 0,
@@ -307,13 +307,13 @@ pub fn seed_provider(
         &[
             PROVIDER_SEED.as_bytes(),
             market_pda.as_ref(),
-            user_main_pda.as_ref(),
+            authority.as_ref(),
         ],
         &core_id,
     );
     let provider = Provider {
         marketplace: market_pda,
-        user_main: user_main_pda,
+        authority: *authority,
         is_banned: false,
         offer_count: 0,
         completed_agreements: 0,
@@ -372,7 +372,6 @@ pub fn seed_offer(
         default_arbiter: None,
         cancellation_policy: opts.cancellation_policy,
         content_ref: [1u8; 32],
-        state_hash: [2u8; 32],
         is_active: true,
         rent_payer: Pubkey::new_unique(),
         bump,

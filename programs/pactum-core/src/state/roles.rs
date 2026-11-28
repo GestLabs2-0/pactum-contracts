@@ -21,12 +21,12 @@ pub enum DisputeParty {
     Provider,
 }
 
-/// Seeds: `[CLIENT_SEED.as_bytes(), marketplace.key().as_ref(), user_main.key().as_ref()]` (`["client", marketplace, user_main]`).
+/// Seeds: `[CLIENT_SEED.as_bytes(), marketplace.key().as_ref(), authority.key().as_ref()]` (`["client", marketplace, authority]`).
 #[account]
 #[derive(InitSpace)]
 pub struct Client {
     pub marketplace: Pubkey,
-    pub user_main: Pubkey,
+    pub authority: Pubkey,
     pub is_banned: bool,
     pub completed_agreements: u32,
     pub cancelled_agreements: u32,
@@ -37,12 +37,12 @@ pub struct Client {
     pub bump: u8,
 }
 
-/// Seeds: `[PROVIDER_SEED.as_bytes(), marketplace.key().as_ref(), user_main.key().as_ref()]` (`["provider", marketplace, user_main]`).
+/// Seeds: `[PROVIDER_SEED.as_bytes(), marketplace.key().as_ref(), authority.key().as_ref()]` (`["provider", marketplace, authority]`).
 #[account]
 #[derive(InitSpace)]
 pub struct Provider {
     pub marketplace: Pubkey,
-    pub user_main: Pubkey,
+    pub authority: Pubkey,
     pub is_banned: bool,
     pub offer_count: u32,
     pub completed_agreements: u32,
@@ -54,12 +54,12 @@ pub struct Provider {
     pub bump: u8,
 }
 
-/// Seeds: `[JUDGE_SEED.as_bytes(), marketplace.key().as_ref(), user_main.key().as_ref()]` (`["judge", marketplace, user_main]`).
+/// Seeds: `[JUDGE_SEED.as_bytes(), marketplace.key().as_ref(), authority.key().as_ref()]` (`["judge", marketplace, authority]`).
 #[account]
 #[derive(InitSpace)]
 pub struct Judge {
     pub marketplace: Pubkey,
-    pub user_main: Pubkey,
+    pub authority: Pubkey,
     pub staked_amount: u64,
     pub pool_id: u16,
     pub leaf_index: u32,
