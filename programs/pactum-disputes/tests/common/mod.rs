@@ -117,14 +117,25 @@ pub fn token_account_amount(svm: &LiteSVM, account: &Pubkey) -> u64 {
     u64::from_le_bytes(acc.data[64..72].try_into().unwrap())
 }
 
-pub fn send_ix(
+pub fn set_cu_limit_ix(units: u32) -> Instruction {
+    let mut data = Vec::with_capacity(5);
+    data.push(2u8); // SetComputeUnitLimit
+    data.extend_from_slice(&units.to_le_bytes());
+    Instruction {
+        program_id: Pubkey::from_str_const("ComputeBudget111111111111111111111111111111"),
+        accounts: vec![],
+        data,
+    }
+}
+
+pub fn send_ixs(
     svm: &mut LiteSVM,
-    ix: Instruction,
+    ixs: &[Instruction],
     payer: &Keypair,
     signers: &[&Keypair],
 ) -> Result<(), String> {
     let blockhash = svm.latest_blockhash();
-    let msg = Message::new_with_blockhash(&[ix], Some(&payer.pubkey()), &blockhash);
+    let msg = Message::new_with_blockhash(ixs, Some(&payer.pubkey()), &blockhash);
     let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), signers).unwrap();
     let res = svm
         .send_transaction(tx)
@@ -132,6 +143,15 @@ pub fn send_ix(
         .map_err(|e| format!("{e:?}"));
     svm.expire_blockhash();
     res
+}
+
+pub fn send_ix(
+    svm: &mut LiteSVM,
+    ix: Instruction,
+    payer: &Keypair,
+    signers: &[&Keypair],
+) -> Result<(), String> {
+    send_ixs(svm, &[ix], payer, signers)
 }
 
 pub fn warp_to_ts(svm: &mut LiteSVM, unix_timestamp: i64) {

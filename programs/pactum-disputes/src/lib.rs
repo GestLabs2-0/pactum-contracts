@@ -64,4 +64,15 @@ pub mod pactum_disputes {
     pub fn propose_arbiter_replacement(ctx: Context<ProposeArbiterReplacement>) -> Result<()> {
         handler_propose_arbiter_replacement(ctx)
     }
+
+    pub fn accept_arbiter_replacement(ctx: Context<AcceptArbiterReplacement>) -> Result<()> {
+        handler_accept_arbiter_replacement(ctx)
+    }
+
+    pub fn fallback_to_integrator(
+        ctx: Context<FallbackToIntegrator>,
+        outcome: Option<DisputeOutcome>,
+    ) -> Result<()> {
+        handler_fallback_to_integrator(ctx, outcome)
+    }
 }

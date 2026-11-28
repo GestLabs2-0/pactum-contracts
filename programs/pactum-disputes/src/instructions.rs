@@ -1,4 +1,6 @@
+pub mod accept_arbiter_replacement;
 pub mod escalate_dispute;
+pub mod fallback_to_integrator;
 pub mod initialize_dispute_config;
 pub mod link_evidence;
 pub mod open_dispute;
@@ -7,7 +9,9 @@ pub mod resolve_by_arbiter;
 pub mod solve_p2p_agreement;
 pub mod update_dispute_config;
 
+pub use accept_arbiter_replacement::*;
 pub use escalate_dispute::*;
+pub use fallback_to_integrator::*;
 pub use initialize_dispute_config::*;
 pub use link_evidence::*;
 pub use open_dispute::*;
